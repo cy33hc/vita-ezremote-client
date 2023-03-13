@@ -81,6 +81,10 @@ namespace Services
 
 		std::string lang = std::string(language);
 		lang = Util::Trim(lang, " ");
+		ImFontConfig config;
+		config.OversampleH = 1;
+		config.OversampleV = 1;
+
 		if (lang.size() > 0)
 		{
 			if (strcmp(lang.c_str(), "Ryukyuan") == 0)
@@ -88,7 +92,7 @@ namespace Services
 				io.Fonts->AddFontFromFileTTF(
 					"sa0:/data/font/pvf/jpn0.pvf",
 					16.0f,
-					NULL,
+					&config,
 					io.Fonts->GetGlyphRangesJapanese());
 			}
 			else if (strcmp(lang.c_str(), "Thai") == 0)
@@ -96,7 +100,7 @@ namespace Services
 				io.Fonts->AddFontFromFileTTF(
 					"ux0:app/SMBCLI001/lang/Roboto_ext.ttf",
 					16.0f,
-					NULL,
+					&config,
 					io.Fonts->GetGlyphRangesThai());
 			}
 			else if (strcmp(lang.c_str(), "Vietnamese") == 0)
@@ -104,7 +108,7 @@ namespace Services
 				io.Fonts->AddFontFromFileTTF(
 					"ux0:app/SMBCLI001/lang/Roboto_ext.ttf",
 					16.0f,
-					NULL,
+					&config,
 					io.Fonts->GetGlyphRangesVietnamese());
 			}
 			else if (strcmp(lang.c_str(), "Arabic") == 0)
@@ -112,7 +116,7 @@ namespace Services
 				io.Fonts->AddFontFromFileTTF(
 					"ux0:app/SMBCLI001/lang/Roboto_ext.ttf",
 					16.0f,
-					NULL,
+					&config,
 					arabic);
 			}
 			else
@@ -120,7 +124,7 @@ namespace Services
 				io.Fonts->AddFontFromFileTTF(
 					"sa0:/data/font/pvf/ltn0.pvf",
 					16.0f,
-					NULL,
+					&config,
 					ranges);
 			}
 		}
@@ -131,25 +135,24 @@ namespace Services
 			case SCE_SYSTEM_PARAM_LANG_CHINESE_S:
 				io.Fonts->AddFontFromFileTTF(
 					"sa0:/data/font/pvf/cn0.pvf",
-					17.0f,
-					NULL,
-					io.Fonts->GetGlyphRangesChineseSimplifiedCommon());
+					16.0f,
+					&config,
+					io.Fonts->GetGlyphRangesChineseFull());
 				break;
 			case SCE_SYSTEM_PARAM_LANG_CHINESE_T:
 				io.Fonts->AddFontFromFileTTF(
 					"sa0:/data/font/pvf/cn0.pvf",
 					16.0f,
-					NULL,
+					&config,
 					io.Fonts->GetGlyphRangesChineseFull());
 				break;
 			case SCE_SYSTEM_PARAM_LANG_KOREAN:
 			{
-				ImFontConfig config;
 				config.MergeMode = true;
 				io.Fonts->AddFontFromFileTTF(
 					"sa0:/data/font/pvf/ltn0.pvf",
 					16.0f,
-					NULL,
+					&config,
 					io.Fonts->GetGlyphRangesDefault());
 				io.Fonts->AddFontFromFileTTF(
 					"sa0:/data/font/pvf/kr0.pvf",
@@ -163,14 +166,14 @@ namespace Services
 				io.Fonts->AddFontFromFileTTF(
 					"sa0:/data/font/pvf/jpn0.pvf",
 					16.0f,
-					NULL,
+					&config,
 					io.Fonts->GetGlyphRangesJapanese());
 				break;
 			default:
 				io.Fonts->AddFontFromFileTTF(
 					"sa0:/data/font/pvf/ltn0.pvf",
 					16.0f,
-					NULL,
+					&config,
 					ranges);
 				break;
 			}

@@ -6,7 +6,6 @@
 #include <imgui_internal.h>
 #include <set>
 #include "fs.h"
-#include "webdavclient.h"
 #include "actions.h"
 
 #define LOCAL_BROWSER 1
@@ -14,8 +13,8 @@
 
 extern int view_mode;
 extern bool handle_updates;
-extern uint64_t bytes_transfered;
-extern uint64_t bytes_to_download;
+extern int64_t bytes_transfered;
+extern int64_t bytes_to_download;
 extern std::vector<DirEntry> local_files;
 extern std::vector<DirEntry> remote_files;
 extern std::set<DirEntry> multi_selected_local_files;

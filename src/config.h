@@ -7,7 +7,7 @@
 #include <map>
 #include "common.h"
 #include "fs.h"
-#include "remote_client.h"
+#include "clients/remote_client.h"
 
 #define APP_ID "RMTCLI001"
 #define DATA_PATH "ux0:data/" APP_ID

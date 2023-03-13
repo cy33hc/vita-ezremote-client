@@ -1191,11 +1191,11 @@ int FtpClient::Rmdir(const std::string &path, bool recursive)
  *
  * return 1 if successful, 0 otherwise
  */
-int FtpClient::Size(const std::string &path, uint64_t *size)
+int FtpClient::Size(const std::string &path, int64_t *size)
 {
 	char cmd[512];
 	int resp, rv = 1;
-	uint64_t sz;
+	int64_t sz = 0;
 
 	if ((path.length() + 7) > sizeof(cmd))
 		return 0;
@@ -1209,7 +1209,7 @@ int FtpClient::Size(const std::string &path, uint64_t *size)
 		rv = 0;
 	else
 	{
-		if (sscanf(mp_ftphandle->response, "%d %ld", &resp, &sz) == 2)
+		if (sscanf(mp_ftphandle->response, "%d %lu", &resp, &sz) == 2)
 			*size = sz;
 		else
 			rv = 0;

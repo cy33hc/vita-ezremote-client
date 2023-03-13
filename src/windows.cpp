@@ -31,15 +31,14 @@ static ime_callback_t ime_cancelled = nullptr;
 static std::vector<std::string> *ime_multi_field;
 static char *ime_single_field;
 static int ime_field_size;
-static float progress = 0.0f;
 
 static char txt_server_port[6];
 
 bool handle_updates = false;
 float previous_right = 0.0f;
 float previous_left = 0.0f;
-uint64_t bytes_transfered = 0;
-uint64_t bytes_to_download;
+int64_t bytes_transfered = 0;
+int64_t bytes_to_download;
 std::vector<DirEntry> local_files;
 std::vector<DirEntry> remote_files;
 std::set<DirEntry> multi_selected_local_files;
@@ -73,12 +72,6 @@ ACTIONS action_to_take = ACTION_NONE;
 
 namespace Windows
 {
-    static int FtpCallback(uint64_t xfered, void* arg)
-    {
-        bytes_transfered = xfered;
-        return 1;
-    }
-
     void Init()
     {
         client = NULL;
@@ -912,7 +905,7 @@ namespace Windows
             ImGui::SameLine();
             ImGui::SetCursorPosX(105);
             ImGui::Text("%02d/%02d/%d %02d:%02d:%02d", item.modified.day, item.modified.month, item.modified.year,
-                         item.modified.hours, item.modified.minutes, item.modified.seconds);
+                        item.modified.hours, item.modified.minutes, item.modified.seconds);
             ImGui::Separator();
 
             ImGui::SetCursorPosX(ImGui::GetCursorPosX() + 200);
@@ -953,7 +946,8 @@ namespace Windows
 
                 if (file_transfering)
                 {
-                    progress = (float)bytes_transfered / (float)bytes_to_download;
+                    static float progress = 0.0f;
+                    progress = (float)bytes_transfered / (float)bytes_to_download;;
                     ImGui::ProgressBar(progress, ImVec2(465, 0));
                 }
 
@@ -1267,8 +1261,4 @@ namespace Windows
         selected_action = ACTION_NONE;
     }
 
-    void SetTransfered(uint64_t xfered)
-    {
-        bytes_transfered = xfered;
-    }
 }

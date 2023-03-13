@@ -36,14 +36,14 @@ namespace WebDAV
 
 	static int DownloadCallback(void *context, uint64_t dltotal, uint64_t dlnow, uint64_t ultotal, uint64_t ulnow)
 	{
-		uint64_t *bytes_transfered = (uint64_t *)context;
+		int64_t *bytes_transfered = (int64_t *)context;
 		*bytes_transfered = dlnow;
 		return 0;
 	}
 
 	static int UploadCallback(void *context, uint64_t dltotal, uint64_t dlnow, uint64_t ultotal, uint64_t ulnow)
 	{
-		uint64_t *bytes_transfered = (uint64_t *)context;
+		int64_t *bytes_transfered = (int64_t *)context;
 		*bytes_transfered = ulnow;
 		return 0;
 	}
@@ -221,7 +221,7 @@ namespace WebDAV
 		return client->clean(ppath);
 	}
 
-	int WebDavClient::Size(const std::string &ppath, uint64_t *size)
+	int WebDavClient::Size(const std::string &ppath, int64_t *size)
 	{
 		WebDAV::dict_t file_info = client->info(ppath);
 		*size = std::stoll(WebDAV::get(file_info, "size"));

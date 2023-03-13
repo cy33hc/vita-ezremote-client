@@ -1,18 +1,18 @@
 #include <string.h>
+#include "clients/remote_client.h"
+#include "clients/smbclient.h"
+#include "clients/ftpclient.h"
+#include "clients/webdavclient.h"
 #include "config.h"
 #include "common.h"
-#include "ftpclient.h"
 #include "lang.h"
-#include "remote_client.h"
-#include "smbclient.h"
 #include "util.h"
-#include "webdavclient.h"
 #include "windows.h"
 #include <debugnet.h>
 
 namespace Actions
 {
-    static int FtpCallback(uint64_t xfered, void* arg)
+    static int FtpCallback(int64_t xfered, void* arg)
     {
         bytes_transfered = xfered;
         return 1;
@@ -589,7 +589,7 @@ namespace Actions
         {
             FtpClient *ftpclient = new FtpClient();
             ftpclient->SetConnmode(FtpClient::pasv);
-            ftpclient->SetCallbackBytes(1);
+            ftpclient->SetCallbackBytes(256000);
             ftpclient->SetCallbackXferFunction(FtpCallback);
             client = ftpclient;
         }

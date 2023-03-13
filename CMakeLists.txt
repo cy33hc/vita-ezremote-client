@@ -22,6 +22,9 @@ include_directories(
 )
 
 add_executable(${PROJECT_NAME}
+  src/clients/ftpclient.cpp
+  src/clients/webdavclient.cpp
+  src/clients/smbclient.cpp
   src/textures.cpp
   src/fs.cpp
   src/main.cpp
@@ -29,9 +32,6 @@ add_executable(${PROJECT_NAME}
   src/config.cpp
   src/ime_dialog.cpp
   src/net.cpp
-  src/ftpclient.cpp
-  src/webdavclient.cpp
-  src/smbclient.cpp
   src/gui.cpp
   src/windows.cpp
   src/actions.cpp

@@ -13,7 +13,7 @@
 
 #define FTP_CLIENT_MAX_FILENAME_LEN 128
 
-typedef int (*FtpCallbackXfer)(uint64_t xfered, void *arg);
+typedef int (*FtpCallbackXfer)(int64_t xfered, void *arg);
 
 struct ftphandle {
 	char *cput,*cget;
@@ -23,9 +23,9 @@ struct ftphandle {
 	int dir;
 	ftphandle *ctrl;
 	int cmode;
-	uint64_t xfered;
-	uint64_t xfered1;
-	uint64_t cbbytes;
+	int64_t xfered;
+	int64_t xfered1;
+	int64_t cbbytes;
 	char response[512];
 	uint64_t offset;
 	bool correctpasv;
@@ -79,7 +79,7 @@ public:
 	int Cdup();
 	int Rmdir(const std::string &path);
 	int Rmdir(const std::string &path, bool recursive);
-	int Size(const std::string &path, uint64_t *size);
+	int Size(const std::string &path, int64_t *size);
 	int Get(const std::string &outputfile, const std::string &path, uint64_t offset = 0);
 	int Put(const std::string &inputfile, const std::string &path, uint64_t offset = 0);
 	int Rename(const std::string &src, const std::string &dst);

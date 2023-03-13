@@ -18,7 +18,7 @@ namespace WebDAV
 		int Connect(const std::string &host, const std::string &user, const std::string &pass);
 		int Mkdir(const std::string &path);
 		int Rmdir(const std::string &path, bool recursive);
-		int Size(const std::string &path, uint64_t *size);
+		int Size(const std::string &path, int64_t *size);
 		int Get(const std::string &outputfile, const std::string &path, uint64_t offset=0);
 		int Put(const std::string &inputfile, const std::string &path, uint64_t offset=0);
 		int Rename(const std::string &src, const std::string &dst);

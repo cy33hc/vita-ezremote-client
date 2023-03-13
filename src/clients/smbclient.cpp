@@ -373,7 +373,7 @@ int SmbClient::Delete(const std::string &ppath)
 	return 1;
 }
 
-int SmbClient::Size(const std::string &ppath, uint64_t *size)
+int SmbClient::Size(const std::string &ppath, int64_t *size)
 {
 	std::string path = std::string(ppath);
 	path = Util::Trim(path, "/");
