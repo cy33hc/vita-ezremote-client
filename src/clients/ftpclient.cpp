@@ -1,4 +1,6 @@
 #include <psp2/net/net.h>
+#include <arpa/inet.h>
+#include <netdb.h>
 #include <string>
 #include <cstring>
 #include <stdio.h>
@@ -19,8 +21,6 @@
 #define FTP_CLIENT_CONTROL 0
 #define FTP_CLIENT_READ 1
 #define FTP_CLIENT_WRITE 2
-
-#define MIN(X, Y) (((X) < (Y)) ? (X) : (Y))
 
 FtpClient::FtpClient()
 {
@@ -52,6 +52,31 @@ int FtpClient::Connect(const std::string &url, const std::string &user, const st
 	{
 		port = std::atoi(host.substr(colon_pos + 1).c_str());
 		host = host.substr(0, colon_pos);
+	}
+
+	struct hostent *he;
+	struct in_addr **addr_list;
+	char ip[20];
+	int i;
+
+	if (strcmp(host.c_str(), "localhost") == 0)
+	{
+		sprintf(ip, "%s", "127.0.0.1");
+	}
+	else
+	{
+		if ((he = gethostbyname(host.c_str())) == NULL)
+		{
+			sprintf(mp_ftphandle->response, "%s", lang_strings[STR_COULD_NOT_RESOLVE_HOST]);
+			return 0;
+		}
+
+		addr_list = (struct in_addr **)he->h_addr_list;
+		for (i = 0; addr_list[i] != NULL; i++)
+		{
+			strcpy(ip, inet_ntoa(*addr_list[i]));
+			break;
+		}
 	}
 
 	int sControl;
@@ -1549,20 +1574,7 @@ std::vector<DirEntry> FtpClient::ListDir(const std::string &path)
 {
 	std::vector<DirEntry> out;
 	DirEntry entry;
-	memset(&entry, 0, sizeof(DirEntry));
-	if (path[path.length() - 1] == '/' && path.length() > 1)
-	{
-		strlcpy(entry.directory, path.c_str(), path.length() - 1);
-	}
-	else
-	{
-		sprintf(entry.directory, "%s", path.c_str());
-	}
-	sprintf(entry.name, "..");
-	sprintf(entry.path, "%s", entry.directory);
-	sprintf(entry.display_size, "%s", lang_strings[STR_FOLDER]);
-	entry.file_size = 0;
-	entry.isDir = true;
+	Util::SetupPreviousFolder(path, &entry);
 	out.push_back(entry);
 
 	ftphandle *nData;
@@ -1579,6 +1591,7 @@ std::vector<DirEntry> FtpClient::ListDir(const std::string &path)
 		{
 			DirEntry entry;
 			memset(&entry, 0, sizeof(entry));
+			entry.selectable = true;
 			if (ParseDirEntry(buf, &entry) > 0)
 			{
 				sprintf(entry.directory, "%s", path.c_str());
@@ -1658,4 +1671,21 @@ std::string FtpClient::GetPath(std::string ppath1, std::string ppath2)
 	path2 = Util::Rtrim(Util::Trim(path2, " "), "/");
 	path1 = path1 + "/" + path2;
 	return path1;
+}
+
+uint32_t FtpClient::SupportedActions()
+{
+	return REMOTE_ACTION_ALL ^ REMOTE_ACTION_CUT ^ REMOTE_ACTION_COPY ^ REMOTE_ACTION_PASTE;
+}
+
+int FtpClient::Copy(const std::string &from, const std::string &to)
+{
+	sprintf(mp_ftphandle->response, "%s", lang_strings[STR_UNSUPPORTED_OPERATION_MSG]);
+	return 0;
+}
+
+int FtpClient::Move(const std::string &from, const std::string &to)
+{
+	sprintf(mp_ftphandle->response, "%s", lang_strings[STR_UNSUPPORTED_OPERATION_MSG]);
+	return 0;
 }

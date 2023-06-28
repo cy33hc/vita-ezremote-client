@@ -8,8 +8,8 @@
 	FUNC(STR_REMOTE)                     \
 	FUNC(STR_MESSAGES)                   \
 	FUNC(STR_UPDATE_SOFTWARE)            \
-	FUNC(STR_CONNECT)                \
-	FUNC(STR_DISCONNECT)             \
+	FUNC(STR_CONNECT)                    \
+	FUNC(STR_DISCONNECT)                 \
 	FUNC(STR_SEARCH)                     \
 	FUNC(STR_REFRESH)                    \
 	FUNC(STR_SERVER)                     \
@@ -97,7 +97,52 @@
 	FUNC(STR_COMPRESS)                   \
 	FUNC(STR_ZIP_FILE_PATH)              \
 	FUNC(STR_COMPRESSING)                \
-	FUNC(STR_ERROR_CREATE_ZIP)
+	FUNC(STR_ERROR_CREATE_ZIP)           \
+	FUNC(STR_UNSUPPORTED_FILE_FORMAT)    \
+	FUNC(STR_CUT)                        \
+	FUNC(STR_COPY)                       \
+	FUNC(STR_PASTE)                      \
+	FUNC(STR_MOVING)                     \
+	FUNC(STR_COPYING)                    \
+	FUNC(STR_FAIL_MOVE_MSG)              \
+	FUNC(STR_FAIL_COPY_MSG)              \
+	FUNC(STR_CANT_MOVE_TO_SUBDIR_MSG)    \
+	FUNC(STR_CANT_COPY_TO_SUBDIR_MSG)    \
+	FUNC(STR_UNSUPPORTED_OPERATION_MSG)  \
+	FUNC(STR_HTTP_PORT)                  \
+	FUNC(STR_REINSTALL_CONFIRM_MSG)      \
+	FUNC(STR_REMOTE_NOT_SUPPORT_MSG)     \
+	FUNC(STR_CANNOT_CONNECT_REMOTE_MSG)  \
+	FUNC(STR_DOWNLOAD_INSTALL_MSG)       \
+	FUNC(STR_CHECKING_REMOTE_SERVER_MSG) \
+	FUNC(STR_ENABLE_RPI)                 \
+	FUNC(STR_ENABLE_RPI_FTP_SMB_MSG)     \
+	FUNC(STR_ENABLE_RPI_WEBDAV_MSG)      \
+	FUNC(STR_FILES)                      \
+	FUNC(STR_EDITOR)                     \
+	FUNC(STR_SAVE)                       \
+	FUNC(STR_MAX_EDIT_FILE_SIZE_MSG)     \
+	FUNC(STR_DELETE_LINE)                \
+	FUNC(STR_INSERT_LINE)                \
+	FUNC(STR_MODIFIED)                   \
+	FUNC(STR_FAIL_GET_TOKEN_MSG)         \
+	FUNC(STR_GET_TOKEN_SUCCESS_MSG)      \
+	FUNC(STR_PERM_DRIVE)                 \
+	FUNC(STR_PERM_DRIVE_APPDATA)         \
+	FUNC(STR_PERM_DRIVE_FILE)            \
+	FUNC(STR_PERM_DRIVE_METADATA)        \
+	FUNC(STR_PERM_DRIVE_METADATA_RO)     \
+	FUNC(STR_GOOGLE_LOGIN_FAIL_MSG)      \
+	FUNC(STR_GOOGLE_LOGIN_TIMEOUT_MSG)   \
+	FUNC(STR_NEW_FILE)                   \
+	FUNC(STR_SETTINGS)                   \
+	FUNC(STR_CLIENT_ID)                  \
+	FUNC(STR_CLIENT_SECRET)              \
+	FUNC(STR_GLOBAL)                     \
+	FUNC(STR_GOOGLE)                     \
+	FUNC(STR_COPY_LINE)                  \
+	FUNC(STR_PASTE_LINE)                 \
+	FUNC(STR_SHOW_HIDDEN_FILES)
 
 #define GET_VALUE(x) x,
 #define GET_STRING(x) #x,
@@ -112,9 +157,9 @@ enum
 	SCE_SYSTEM_PARAM_LANG_UKRAINIAN = 20,
 };
 
-#define LANG_STRINGS_NUM 96
-#define LANG_ID_SIZE LANG_STRINGS_NUM
-#define LANG_STR_SIZE 256
+#define LANG_STRINGS_NUM 141
+#define LANG_ID_SIZE 64
+#define LANG_STR_SIZE 384
 extern char lang_identifiers[LANG_STRINGS_NUM][LANG_ID_SIZE];
 extern char lang_strings[LANG_STRINGS_NUM][LANG_STR_SIZE];
 extern bool needs_extended_font;

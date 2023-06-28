@@ -15,8 +15,6 @@
 #include "windows.h"
 #include "util.h"
 
-#define MIN(X, Y) (((X) < (Y)) ? (X) : (Y))
-
 static const char *months[12] = {
 	"Jan",
 	"Feb",
@@ -51,7 +49,7 @@ namespace WebDAV
 	int WebDavClient::Connect(const std::string &host, const std::string &user, const std::string &pass)
 	{
 		sprintf(response, "%s", "");
-		std::string url = std::string(host);
+		std::string url = GetHttpUrl(host);
 		std::size_t scheme_pos = url.find_first_of("://");
 		std::string root_folder = "/";
 		if (scheme_pos != std::string::npos)
@@ -232,20 +230,7 @@ namespace WebDAV
 	{
 		std::vector<DirEntry> out;
 		DirEntry entry;
-		memset(&entry, 0, sizeof(DirEntry));
-		if (path.length() > 1 && path[path.length() - 1] == '/')
-		{
-			strlcpy(entry.directory, path.c_str(), path.length() - 1);
-		}
-		else
-		{
-			sprintf(entry.directory, "%s", path.c_str());
-		}
-		sprintf(entry.name, "..");
-		sprintf(entry.path, "%s", entry.directory);
-		sprintf(entry.display_size, "%s", lang_strings[STR_FOLDER]);
-		entry.file_size = 0;
-		entry.isDir = true;
+		Util::SetupPreviousFolder(path, &entry);
 		out.push_back(entry);
 
 		WebDAV::dict_items_t files = client->list(path);
@@ -253,6 +238,8 @@ namespace WebDAV
 		{
 			DirEntry entry;
 			memset(&entry, 0, sizeof(entry));
+			
+			entry.selectable = true;
 			sprintf(entry.directory, "%s", path.c_str());
 			sprintf(entry.name, WebDAV::get(files[i], "name").c_str());
 
@@ -337,8 +324,25 @@ namespace WebDAV
 		return path1;
 	}
 
+	int WebDavClient::Copy(const std::string &from, const std::string &to)
+	{
+		bool ret = client->copy(from, to);
+		return ret;
+	}
+
+	int WebDavClient::Move(const std::string &from, const std::string &to)
+	{
+		bool ret = client->move(from, to);
+		return ret;
+	}
+
 	ClientType WebDavClient::clientType()
 	{
 		return CLIENT_TYPE_WEBDAV;
+	}
+
+	uint32_t WebDavClient::SupportedActions()
+	{
+		return REMOTE_ACTION_ALL;
 	}
 }

@@ -53,6 +53,14 @@ namespace FS {
     std::vector<DirEntry> ListDir(const std::string& path, int *err);
 
     int hasEndSlash(const char *path);
+
+    bool Copy(const std::string &from, const std::string &to);
+    bool Move(const std::string &from, const std::string &to);
+
+    bool LoadText(std::vector<std::string> *lines, const std::string &path);
+    bool SaveText(std::vector<std::string> *lines, const std::string &path);
+
+    int Head(const std::string &path, void* buffer, uint16_t len);
 }
 
 #endif

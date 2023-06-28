@@ -15,10 +15,11 @@
 
 typedef int (*FtpCallbackXfer)(int64_t xfered, void *arg);
 
-struct ftphandle {
-	char *cput,*cget;
+struct ftphandle
+{
+	char *cput, *cget;
 	int handle;
-	int cavail,cleft;
+	int cavail, cleft;
 	char *buf;
 	int dir;
 	ftphandle *ctrl;
@@ -59,16 +60,16 @@ public:
 		pasv = 1,
 		port
 	};
-	
+
 	enum attributes
 	{
-       directory = 1,
-       readonly = 2
+		directory = 1,
+		readonly = 2
 	};
 
-    FtpClient();
-    ~FtpClient();
-    int Connect(const std::string &url, const std::string &user, const std::string &pass);
+	FtpClient();
+	~FtpClient();
+	int Connect(const std::string &url, const std::string &user, const std::string &pass);
 	void SetConnmode(connmode mode);
 	int Login(const std::string &user, const std::string &pass);
 	int Site(const std::string &cmd);
@@ -84,7 +85,9 @@ public:
 	int Put(const std::string &inputfile, const std::string &path, uint64_t offset = 0);
 	int Rename(const std::string &src, const std::string &dst);
 	int Delete(const std::string &path);
-	std::vector<std::string> ListFiles(const std::string &path, bool includeSubDir=false);
+    int Copy(const std::string &from, const std::string &to);
+    int Move(const std::string &from, const std::string &to);
+	std::vector<std::string> ListFiles(const std::string &path, bool includeSubDir = false);
 	std::vector<DirEntry> ListDir(const std::string &path);
 	void SetCallbackXferFunction(FtpCallbackXfer pointer);
 	void SetCallbackArg(void *arg);
@@ -93,24 +96,25 @@ public:
 	bool Ping();
 	bool FileExists(const std::string &path);
 	bool IsConnected();
-	const char* LastResponse();
+	const char *LastResponse();
 	int GetIdleTime();
 	int Quit();
 	std::string GetPath(std::string path1, std::string path2);
 	ClientType clientType();
+	uint32_t SupportedActions();
 
 private:
-	ftphandle* mp_ftphandle;
+	ftphandle *mp_ftphandle;
 	SceDateTime time;
 	SceUInt64 tick;
 	SSL_CTX *sslctx;
 	SSL *ssl;
 
 	int FtpSendCmd(const std::string &cmd, char expected_resp, ftphandle *nControl);
-	ftphandle* RawOpen(const std::string &path, accesstype type, transfermode mode);
-	int RawClose(ftphandle* handle);
-	int RawWrite(void* buf, int len, ftphandle* handle);
-	int RawRead(void* buf, int max, ftphandle* handle);
+	ftphandle *RawOpen(const std::string &path, accesstype type, transfermode mode);
+	int RawClose(ftphandle *handle);
+	int RawWrite(void *buf, int len, ftphandle *handle);
+	int RawRead(void *buf, int max, ftphandle *handle);
 	int ReadResponse(char c, ftphandle *nControl);
 	int Readline(char *buf, int max, ftphandle *nControl);
 	int Writeline(char *buf, int len, ftphandle *nData);

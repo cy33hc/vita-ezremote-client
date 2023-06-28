@@ -20,6 +20,8 @@ extern "C"
 #include "inifile.h"
 }
 
+#define MAX_EDIT_FILE_SIZE 32768
+
 static SceCtrlData pad_prev;
 bool paused = false;
 int view_mode;
@@ -43,6 +45,9 @@ std::vector<DirEntry> local_files;
 std::vector<DirEntry> remote_files;
 std::set<DirEntry> multi_selected_local_files;
 std::set<DirEntry> multi_selected_remote_files;
+std::vector<DirEntry> local_paste_files;
+std::vector<DirEntry> remote_paste_files;
+ACTIONS paste_action;
 DirEntry selected_local_file;
 DirEntry selected_remote_file;
 ACTIONS selected_action;
@@ -60,6 +65,17 @@ bool stop_activity = false;
 bool file_transfering = false;
 bool set_focus_to_local = false;
 bool set_focus_to_remote = false;
+
+// Editor variables
+std::vector<std::string> edit_buffer;
+bool editor_inprogress = false;
+char edit_line[1024];
+int edit_line_num = 0;
+char label[256];
+bool editor_modified = false;
+char edit_file[256];
+int edit_line_to_select = -1;
+std::string copy_text;
 
 bool dont_prompt_overwrite = false;
 bool dont_prompt_overwrite_cb = false;
@@ -616,6 +632,21 @@ namespace Windows
         EndGroupPanel();
     }
 
+    int getSelectableFlag(uint32_t remote_action)
+    {
+        int flag = ImGuiSelectableFlags_Disabled;
+        bool local_browser_selected = saved_selected_browser & LOCAL_BROWSER;
+        bool remote_browser_selected = saved_selected_browser & REMOTE_BROWSER;
+
+        if ((local_browser_selected && selected_local_file.selectable) ||
+            (remote_browser_selected && selected_remote_file.selectable &&
+             client != nullptr && (client->SupportedActions() & remote_action)))
+        {
+            flag = ImGuiSelectableFlags_None;
+        }
+        return flag;
+    }
+
     void ShowActionsDialog()
     {
         ImGuiIO &io = ImGui::GetIO();
@@ -640,13 +671,13 @@ namespace Windows
         bool remote_browser_selected = saved_selected_browser & REMOTE_BROWSER;
         if (local_browser_selected)
         {
-            ImGui::SetNextWindowPos(ImVec2(120, 150));
+            ImGui::SetNextWindowPos(ImVec2(120, 130));
         }
         else if (remote_browser_selected)
         {
-            ImGui::SetNextWindowPos(ImVec2(600, 150));
+            ImGui::SetNextWindowPos(ImVec2(600, 130));
         }
-        ImGui::SetNextWindowSizeConstraints(ImVec2(230, 150), ImVec2(230, 300), NULL, NULL);
+        ImGui::SetNextWindowSizeConstraints(ImVec2(230, 150), ImVec2(230, 400), NULL, NULL);
         if (ImGui::BeginPopupModal(lang_strings[STR_ACTIONS], NULL, ImGuiWindowFlags_AlwaysAutoResize))
         {
             ImGui::PushID("Select All##settings");
@@ -675,12 +706,64 @@ namespace Windows
             ImGui::PopID();
             ImGui::Separator();
 
+            ImGui::PushID("Cut##settings");
+            if (ImGui::Selectable(lang_strings[STR_CUT], false, getSelectableFlag(REMOTE_ACTION_CUT) | ImGuiSelectableFlags_DontClosePopups, ImVec2(220, 0)))
+            {
+                selected_action = local_browser_selected ? ACTION_LOCAL_CUT : ACTION_REMOTE_CUT;
+                SetModalMode(false);
+                ImGui::CloseCurrentPopup();
+            }
+            ImGui::PopID();
+            ImGui::Separator();
+
+            ImGui::PushID("Copy##settings");
+            if (ImGui::Selectable(lang_strings[STR_COPY], false, getSelectableFlag(REMOTE_ACTION_COPY) | ImGuiSelectableFlags_DontClosePopups, ImVec2(220, 0)))
+            {
+                selected_action = local_browser_selected ? ACTION_LOCAL_COPY : ACTION_REMOTE_COPY;
+                SetModalMode(false);
+                ImGui::CloseCurrentPopup();
+            }
+            ImGui::PopID();
+            ImGui::Separator();
+
+            ImGui::PushID("Paste##settings");
             flags = ImGuiSelectableFlags_Disabled;
-            if ((local_browser_selected && multi_selected_local_files.size() > 0) ||
-                (remote_browser_selected && multi_selected_remote_files.size() > 0))
+            if ((local_browser_selected && local_paste_files.size() > 0) ||
+                (remote_browser_selected && remote_paste_files.size() > 0 &&
+                 client != nullptr && (client->SupportedActions() | REMOTE_ACTION_PASTE)))
                 flags = ImGuiSelectableFlags_None;
+            if (ImGui::Selectable(lang_strings[STR_PASTE], false, flags | ImGuiSelectableFlags_DontClosePopups, ImVec2(220, 0)))
+            {
+                SetModalMode(false);
+                selected_action = local_browser_selected ? ACTION_LOCAL_PASTE : ACTION_REMOTE_PASTE;
+                file_transfering = true;
+                confirm_transfer_state = 0;
+                dont_prompt_overwrite_cb = dont_prompt_overwrite;
+                ImGui::CloseCurrentPopup();
+            }
+            if (ImGui::IsItemHovered())
+            {
+                int height = local_browser_selected ? (local_paste_files.size() * 30) + 42 : (remote_paste_files.size() * 30) + 42;
+                ImGui::SetNextWindowSize(ImVec2(500, height));
+                ImGui::BeginTooltip();
+                int text_width = ImGui::CalcTextSize(lang_strings[STR_FILES]).x;
+                int file_pos = ImGui::GetCursorPosX() + text_width + 15;
+                ImGui::Text("%s: %s", lang_strings[STR_TYPE], (paste_action == ACTION_LOCAL_CUT | paste_action == ACTION_REMOTE_CUT) ? lang_strings[STR_CUT] : lang_strings[STR_COPY]);
+                ImGui::Text("%s:", lang_strings[STR_FILES]);
+                ImGui::SameLine();
+                std::vector<DirEntry> files = (local_browser_selected) ? local_paste_files : remote_paste_files;
+                for (std::vector<DirEntry>::iterator it = files.begin(); it != files.end(); ++it)
+                {
+                    ImGui::SetCursorPosX(file_pos);
+                    ImGui::Text("%s", it->path);
+                }
+                ImGui::EndTooltip();
+            }
+            ImGui::PopID();
+            ImGui::Separator();
+
             ImGui::PushID("Delete##settings");
-            if (ImGui::Selectable(lang_strings[STR_DELETE], false, flags | ImGuiSelectableFlags_DontClosePopups, ImVec2(220, 0)))
+            if (ImGui::Selectable(lang_strings[STR_DELETE], false, getSelectableFlag(REMOTE_ACTION_DELETE) | ImGuiSelectableFlags_DontClosePopups, ImVec2(220, 0)))
             {
                 confirm_state = CONFIRM_WAIT;
                 sprintf(confirm_message, lang_strings[STR_DEL_CONFIRM_MSG]);
@@ -692,9 +775,9 @@ namespace Windows
             ImGui::PopID();
             ImGui::Separator();
 
-            flags = ImGuiSelectableFlags_Disabled;
-            if ((local_browser_selected && multi_selected_local_files.size() == 1) ||
-                (remote_browser_selected && multi_selected_remote_files.size() == 1))
+            flags = getSelectableFlag(REMOTE_ACTION_RENAME);
+            if ((local_browser_selected && multi_selected_local_files.size() > 1) ||
+                (remote_browser_selected && multi_selected_remote_files.size() > 1))
                 flags = ImGuiSelectableFlags_None;
             ImGui::PushID("Rename##settings");
             if (ImGui::Selectable(lang_strings[STR_RENAME], false, flags | ImGuiSelectableFlags_DontClosePopups, ImVec2(220, 0)))
@@ -709,9 +792,11 @@ namespace Windows
             ImGui::PopID();
             ImGui::Separator();
 
-            flags = ImGuiSelectableFlags_Disabled;
-            if (local_browser_selected || remote_browser_selected)
-                flags = ImGuiSelectableFlags_None;
+            flags = ImGuiSelectableFlags_None;
+            if (remote_browser_selected && client != nullptr && !(client->SupportedActions() & REMOTE_ACTION_NEW_FOLDER))
+            {
+                flags = ImGuiSelectableFlags_Disabled;
+            }
             ImGui::PushID("New Folder##settings");
             if (ImGui::Selectable(lang_strings[STR_NEW_FOLDER], false, flags | ImGuiSelectableFlags_DontClosePopups, ImVec2(220, 0)))
             {
@@ -725,12 +810,72 @@ namespace Windows
             ImGui::PopID();
             ImGui::Separator();
 
+            ImGui::PushID("New File##settings");
+            flags = ImGuiSelectableFlags_None;
+            if (remote_browser_selected && client != nullptr && !(client->SupportedActions() & REMOTE_ACTION_NEW_FILE))
+            {
+                flags = ImGuiSelectableFlags_Disabled;
+            }
+            if (ImGui::Selectable(lang_strings[STR_NEW_FILE], false, flags | ImGuiSelectableFlags_DontClosePopups, ImVec2(220, 0)))
+            {
+                if (local_browser_selected)
+                    selected_action = ACTION_NEW_LOCAL_FILE;
+                else if (remote_browser_selected)
+                    selected_action = ACTION_NEW_REMOTE_FILE;
+                SetModalMode(false);
+                ImGui::CloseCurrentPopup();
+            }
+            ImGui::PopID();
+            ImGui::Separator();
+
+            ImGui::PushID("Edit##settings");
+            flags = ImGuiSelectableFlags_None;
+            if ((remote_browser_selected && client != nullptr && (!(client->SupportedActions() & REMOTE_ACTION_EDIT) || selected_remote_file.isDir)) ||
+                (local_browser_selected && selected_local_file.isDir))
+            {
+                flags = ImGuiSelectableFlags_Disabled;
+            }
+            if (ImGui::Selectable(lang_strings[STR_EDIT], false, flags | ImGuiSelectableFlags_DontClosePopups, ImVec2(220, 0)))
+            {
+                bool can_edit = true;
+                if (local_browser_selected)
+                {
+                    if (selected_local_file.file_size > MAX_EDIT_FILE_SIZE)
+                        can_edit = false;
+                    else
+                    {
+                        snprintf(edit_file, 255, "%s", selected_local_file.path);
+                        FS::LoadText(&edit_buffer, selected_local_file.path);
+                    }
+                }
+                else
+                {
+                    if (selected_remote_file.file_size > MAX_EDIT_FILE_SIZE)
+                        can_edit = false;
+                    else if (client != nullptr && client->Get(TMP_EDITOR_FILE, selected_remote_file.path))
+                    {
+                        snprintf(edit_file, 255, "%s", selected_remote_file.path);
+                        FS::LoadText(&edit_buffer, TMP_EDITOR_FILE);
+                    }
+                }
+                if (can_edit)
+                    editor_inprogress = true;
+                else
+                    sprintf(status_message, "%s %d", lang_strings[STR_MAX_EDIT_FILE_SIZE_MSG], MAX_EDIT_FILE_SIZE);
+                editor_modified = false;
+                SetModalMode(false);
+                ImGui::CloseCurrentPopup();
+            }
+            ImGui::PopID();
+            ImGui::Separator();
+
             flags = ImGuiSelectableFlags_Disabled;
             if (local_browser_selected)
             {
-                if (multi_selected_local_files.size() > 0 && client != nullptr)
+                flags = getSelectableFlag(REMOTE_ACTION_UPLOAD);
+                if (local_browser_selected && client != nullptr && !(client->SupportedActions() & REMOTE_ACTION_UPLOAD))
                 {
-                    flags = ImGuiSelectableFlags_None;
+                    flags = ImGuiSelectableFlags_Disabled;
                 }
                 ImGui::PushID("Upload##settings");
                 if (ImGui::Selectable(lang_strings[STR_UPLOAD], false, flags | ImGuiSelectableFlags_DontClosePopups, ImVec2(220, 0)))
@@ -753,7 +898,7 @@ namespace Windows
                     flags = ImGuiSelectableFlags_None;
                 }
                 ImGui::PushID("Download##settings");
-                if (ImGui::Selectable(lang_strings[STR_DOWNLOAD], false, flags | ImGuiSelectableFlags_DontClosePopups, ImVec2(220, 0)))
+                if (ImGui::Selectable(lang_strings[STR_DOWNLOAD], false, getSelectableFlag(REMOTE_ACTION_DOWNLOAD) | ImGuiSelectableFlags_DontClosePopups, ImVec2(220, 0)))
                 {
                     SetModalMode(false);
                     selected_action = ACTION_DOWNLOAD;
@@ -1036,6 +1181,8 @@ namespace Windows
             break;
         case ACTION_NEW_LOCAL_FOLDER:
         case ACTION_NEW_REMOTE_FOLDER:
+        case ACTION_NEW_LOCAL_FILE:
+        case ACTION_NEW_REMOTE_FILE:
             if (gui_mode != GUI_MODE_IME)
             {
                 sprintf(editor_text, "");
@@ -1045,7 +1192,7 @@ namespace Windows
                 ime_after_update = AfterFolderNameCallback;
                 ime_cancelled = CancelActionCallBack;
                 ime_callback = SingleValueImeCallback;
-                Dialog::initImeDialog(lang_strings[STR_NEW_FOLDER], editor_text, 128, SCE_IME_TYPE_DEFAULT, 0, 0);
+                Dialog::initImeDialog((selected_action == ACTION_NEW_LOCAL_FILE || selected_action == ACTION_NEW_REMOTE_FILE)? lang_strings[STR_NEW_FILE]: lang_strings[STR_NEW_FOLDER], editor_text, 128, SCE_IME_TYPE_DEFAULT, 0, 0);
                 gui_mode = GUI_MODE_IME;
             }
             break;
@@ -1141,6 +1288,68 @@ namespace Windows
             handle_updates = true;
             selected_action = ACTION_NONE;
             Updater::StartUpdaterThread();
+            break;
+        case ACTION_LOCAL_CUT:
+        case ACTION_LOCAL_COPY:
+            paste_action = selected_action;
+            local_paste_files.clear();
+            if (multi_selected_local_files.size() > 0)
+                std::copy(multi_selected_local_files.begin(), multi_selected_local_files.end(), std::back_inserter(local_paste_files));
+            else
+                local_paste_files.push_back(selected_local_file);
+            multi_selected_local_files.clear();
+            selected_action = ACTION_NONE;
+            break;
+        case ACTION_REMOTE_CUT:
+        case ACTION_REMOTE_COPY:
+            paste_action = selected_action;
+            remote_paste_files.clear();
+            if (multi_selected_remote_files.size() > 0)
+                std::copy(multi_selected_remote_files.begin(), multi_selected_remote_files.end(), std::back_inserter(remote_paste_files));
+            else
+                remote_paste_files.push_back(selected_remote_file);
+            multi_selected_remote_files.clear();
+            selected_action = ACTION_NONE;
+            break;
+        case ACTION_LOCAL_PASTE:
+            sprintf(status_message, "%s", "");
+            sprintf(activity_message, "%s", "");
+            if (dont_prompt_overwrite || (!dont_prompt_overwrite && confirm_transfer_state == 1))
+            {
+                activity_inprogess = true;
+                sprintf(activity_message, "%s", "");
+                stop_activity = false;
+                confirm_transfer_state = -1;
+                if (paste_action == ACTION_LOCAL_CUT)
+                    Actions::MoveLocalFiles();
+                else if (paste_action == ACTION_LOCAL_COPY)
+                    Actions::CopyLocalFiles();
+                else
+                {
+                    activity_inprogess = false;
+                }
+                selected_action = ACTION_NONE;
+            }
+            break;
+        case ACTION_REMOTE_PASTE:
+            sprintf(status_message, "%s", "");
+            sprintf(activity_message, "%s", "");
+            if (dont_prompt_overwrite || (!dont_prompt_overwrite && confirm_transfer_state == 1))
+            {
+                activity_inprogess = true;
+                sprintf(activity_message, "%s", "");
+                stop_activity = false;
+                confirm_transfer_state = -1;
+                if (paste_action == ACTION_REMOTE_CUT)
+                    Actions::MoveRemoteFiles();
+                else if (paste_action == ACTION_REMOTE_COPY)
+                    Actions::CopyRemoteFiles();
+                else
+                {
+                    activity_inprogess = false;
+                }
+                selected_action = ACTION_NONE;
+            }
             break;
         default:
             break;

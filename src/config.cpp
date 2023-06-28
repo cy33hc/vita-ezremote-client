@@ -3,12 +3,14 @@
 #include <cstring>
 #include <map>
 
+#include "clients/remote_client.h"
 #include "config.h"
 #include "fs.h"
 #include "lang.h"
 
-extern "C" {
-	#include "inifile.h"
+extern "C"
+{
+#include "inifile.h"
 }
 
 bool swap_xo;
@@ -23,23 +25,26 @@ char last_site[32];
 char display_site[64];
 char language[32];
 std::vector<std::string> sites;
-std::map<std::string,RemoteSettings> site_settings;
+std::vector<std::string> http_servers;
+std::map<std::string, RemoteSettings> site_settings;
 bool warn_missing_installs;
 
-namespace CONFIG {
+namespace CONFIG
+{
 
     void LoadConfig()
     {
-        const char* bg_music_list_str;
+        const char *bg_music_list_str;
 
         if (!FS::FolderExists(DATA_PATH))
         {
             FS::MkDirs(DATA_PATH);
         }
 
-        sites = { "Site 1", "Site 2", "Site 3", "Site 4", "Site 5", "Site 6", "Site 7", "Site 8", "Site 9"};
+        sites = {"Site 1", "Site 2", "Site 3", "Site 4", "Site 5", "Site 6", "Site 7", "Site 8", "Site 9", "Site 10"};
+        http_servers = {HTTP_SERVER_APACHE, HTTP_SERVER_MS_IIS, HTTP_SERVER_NGINX, HTTP_SERVER_NPX_SERVE};
 
-		OpenIniFile (CONFIG_INI_FILE);
+        OpenIniFile(CONFIG_INI_FILE);
 
         // Load global config
         swap_xo = ReadBool(CONFIG_GLOBAL, CONFIG_SWAP_XO, false);
@@ -57,7 +62,7 @@ namespace CONFIG {
         warn_missing_installs = ReadBool(CONFIG_GLOBAL, CONFIG_UPDATE_WARN_MISSING, true);
         WriteBool(CONFIG_GLOBAL, CONFIG_UPDATE_WARN_MISSING, warn_missing_installs);
 
-        for (int i=0; i <sites.size(); i++)
+        for (int i = 0; i < sites.size(); i++)
         {
             RemoteSettings setting;
             sprintf(setting.site_name, "%s", sites[i].c_str());
@@ -71,6 +76,16 @@ namespace CONFIG {
             sprintf(setting.password, "%s", ReadString(sites[i].c_str(), CONFIG_REMOTE_SERVER_PASSWORD, ""));
             WriteString(sites[i].c_str(), CONFIG_REMOTE_SERVER_PASSWORD, setting.password);
 
+            setting.gg_account.token_expiry = ReadLong(sites[i].c_str(), CONFIG_GOOGLE_TOKEN_EXPIRY, 0);
+            WriteLong(sites[i].c_str(), CONFIG_GOOGLE_TOKEN_EXPIRY, setting.gg_account.token_expiry);
+
+            sprintf(setting.gg_account.access_token, "%s", ReadString(sites[i].c_str(), CONFIG_GOOGLE_ACCESS_TOKEN, ""));
+            WriteString(sites[i].c_str(), CONFIG_GOOGLE_ACCESS_TOKEN, setting.gg_account.access_token);
+
+            sprintf(setting.gg_account.refresh_token, "%s", ReadString(sites[i].c_str(), CONFIG_GOOGLE_REFRESH_TOKEN, ""));
+            WriteString(sites[i].c_str(), CONFIG_GOOGLE_REFRESH_TOKEN, setting.gg_account.refresh_token);
+
+            SetClientType(&setting);
             site_settings.insert(std::make_pair(sites[i], setting));
         }
 
@@ -86,13 +101,13 @@ namespace CONFIG {
         memset(app_ver, 0, sizeof(app_ver));
         FS::Read(f, app_ver, 3);
         FS::Close(f);
-        float ver = atof(app_ver)/100;
+        float ver = atof(app_ver) / 100;
         sprintf(app_ver, "%.2f", ver);
     }
 
     void SaveConfig()
     {
-		OpenIniFile (CONFIG_INI_FILE);
+        OpenIniFile(CONFIG_INI_FILE);
 
         WriteString(last_site, CONFIG_REMOTE_SERVER, remote_settings->server);
         WriteString(last_site, CONFIG_REMOTE_SERVER_USER, remote_settings->username);
@@ -102,50 +117,31 @@ namespace CONFIG {
         CloseIniFile();
     }
 
-    void ParseMultiValueString(const char* prefix_list, std::vector<std::string> &prefixes, bool toLower)
+    void SetClientType(RemoteSettings *setting)
     {
-        std::string prefix = "";
-        int length = strlen(prefix_list);
-        for (int i=0; i<length; i++)
+        if (strncmp(setting->server, "smb://", 6) == 0)
         {
-            char c = prefix_list[i];
-            if (c != ' ' && c != '\t' && c != ',')
-            {
-                if (toLower)
-                {
-                    prefix += std::tolower(c);
-                }
-                else
-                {
-                    prefix += c;
-                }
-            }
-            
-            if (c == ',' || i==length-1)
-            {
-                prefixes.push_back(prefix);
-                prefix = "";
-            }
+            setting->type = CLIENT_TYPE_SMB;
         }
-    }
-
-    std::string GetMultiValueString(std::vector<std::string> &multi_values)
-    {
-        std::string vts = std::string("");
-        if (multi_values.size() > 0)
+        else if (strncmp(setting->server, "ftp://", 6) == 0 || strncmp(setting->server, "sftp://", 7) == 0)
         {
-            for (int i=0; i<multi_values.size()-1; i++)
-            {
-                vts.append(multi_values[i]).append(",");
-            }
-            vts.append(multi_values[multi_values.size()-1]);
+            setting->type = CLIENT_TYPE_FTP;
         }
-        return vts;
-    }
-
-    void RemoveFromMultiValues(std::vector<std::string> &multi_values, std::string value)
-    {
-        auto itr = std::find(multi_values.begin(), multi_values.end(), value);
-        if (itr != multi_values.end()) multi_values.erase(itr);
+        else if (strncmp(setting->server, "webdav://", 9) == 0 || strncmp(setting->server, "webdavs://", 10) == 0)
+        {
+            setting->type = CLIENT_TYPE_WEBDAV;
+        }
+        else if (strncmp(setting->server, "https://drive.google.com", 24) == 0)
+        {
+            setting->type = CLIENT_TYPE_GOOGLE;
+        }
+        else if (strncmp(setting->server, "http://", 7) == 0 || strncmp(setting->server, "https://", 8) == 0)
+        {
+            setting->type = CLIENT_TYPE_HTTP_SERVER;
+        }
+        else
+        {
+            setting->type = CLINET_TYPE_UNKNOWN;
+        }
     }
 }

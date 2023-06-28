@@ -12,7 +12,8 @@
 #define APP_ID "RMTCLI001"
 #define DATA_PATH "ux0:data/" APP_ID
 #define APP_PATH "ux0:app/" APP_ID
-#define CONFIG_INI_FILE  DATA_PATH "/config.ini"
+#define CONFIG_INI_FILE DATA_PATH "/config.ini"
+#define TMP_EDITOR_FILE DATA_PATH "/tmp_editor.txt"
 
 #define REMOTE_CLIENT_VPK_URL "https://github.com/cy33hc/vita-ezremote-client/releases/download/latest/ezremoteclient.vpk"
 #define REMOTE_CLIENT_VERSION_URL "https://github.com/cy33hc/vita-ezremote-client/releases/download/latest/version.txt"
@@ -41,16 +42,38 @@
 
 #define CONFIG_LANGUAGE "language"
 
-struct RemoteSettings {
+#define CONFIG_GOOGLE_ACCESS_TOKEN "google_access_token"
+#define CONFIG_GOOGLE_REFRESH_TOKEN "google_refresh_token"
+#define CONFIG_GOOGLE_TOKEN_EXPIRY "google_token_expiry"
+
+#define HTTP_SERVER_APACHE "Apache"
+#define HTTP_SERVER_MS_IIS "Microsoft IIS"
+#define HTTP_SERVER_NGINX "Nginx"
+#define HTTP_SERVER_NPX_SERVE "Serve"
+
+struct GoogleAccountInfo
+{
+    char access_token[256];
+    char refresh_token[256];
+    uint64_t token_expiry;
+};
+
+struct RemoteSettings
+{
     char site_name[32];
     char server[256];
-    char username[48];
-    char password[32];
+    char username[33];
+    char password[128];
+    int http_port;
+    ClientType type;
+    char http_server_type[24];
+    GoogleAccountInfo gg_account;
 };
 
 extern bool swap_xo;
 extern std::vector<std::string> sites;
-extern std::map<std::string,RemoteSettings> site_settings;
+extern std::vector<std::string> http_servers;
+extern std::map<std::string, RemoteSettings> site_settings;
 extern char local_directory[MAX_PATH_LENGTH];
 extern char remote_directory[MAX_PATH_LENGTH];
 extern char app_ver[6];
@@ -61,11 +84,10 @@ extern RemoteSettings *remote_settings;
 extern bool warn_missing_installs;
 extern RemoteClient *client;
 
-namespace CONFIG {
+namespace CONFIG
+{
     void LoadConfig();
     void SaveConfig();
-    void RemoveFromMultiValues(std::vector<std::string> &multi_values, std::string value);
-    void ParseMultiValueString(const char* prefix_list, std::vector<std::string> &prefixes, bool toLower);
-    std::string GetMultiValueString(std::vector<std::string> &multi_values);
+    void SetClientType(RemoteSettings *settings);
 }
 #endif

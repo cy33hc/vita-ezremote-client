@@ -300,6 +300,16 @@ WriteInt (cchr * Section, cchr * pKey, int Value)
 }
 
 /*=========================================================================
+   WriteLong : Writes an long to the ini file
+*========================================================================*/
+void WriteLong(cchr *Section, cchr *pKey, long Value)
+{
+	char Val[22]; /* 64bit maximum + sign + \0 */
+	sprintf(Val, "%ld", Value);
+	WriteString(Section, pKey, Val);
+}
+
+/*=========================================================================
    WriteDouble : Writes a double to the ini file
 *========================================================================*/
 void 
@@ -353,6 +363,16 @@ ReadInt (cchr * Section, cchr * pKey, int Default)
 	char Val[12];
 	sprintf (Val, "%d", Default);
 	return (atoi (ReadString (Section, pKey, Val)));
+}
+
+/*=========================================================================
+   ReadLong : Reads a long from the ini file
+*========================================================================*/
+long ReadLong(cchr *Section, cchr *pKey, long Default)
+{
+	char Val[22];
+	sprintf(Val, "%ld", Default);
+	return (atol(ReadString(Section, pKey, Val)));
 }
 
 /*=========================================================================

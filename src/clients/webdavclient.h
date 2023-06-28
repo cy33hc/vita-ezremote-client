@@ -4,6 +4,7 @@
 #include <time.h>
 #include <string>
 #include <vector>
+#include <regex>
 #include "webdav/client.hpp"
 #include "common.h"
 #include "remote_client.h"
@@ -12,6 +13,13 @@
 
 namespace WebDAV
 {
+	inline std::string GetHttpUrl(std::string url)
+	{
+		std::string http_url = std::regex_replace(url, std::regex("webdav://"), "http://");
+		http_url = std::regex_replace(http_url, std::regex("webdavs://"), "https://");
+		return http_url;
+	}
+
 	class WebDavClient : public RemoteClient
 	{
 	public:
@@ -23,6 +31,8 @@ namespace WebDAV
 		int Put(const std::string &inputfile, const std::string &path, uint64_t offset=0);
 		int Rename(const std::string &src, const std::string &dst);
 		int Delete(const std::string &path);
+		int Copy(const std::string &from, const std::string &to);
+		int Move(const std::string &from, const std::string &to);
 		bool FileExists(const std::string &path);
 		std::vector<DirEntry> ListDir(const std::string &path);
 		bool IsConnected();
@@ -31,6 +41,7 @@ namespace WebDAV
 		int Quit();
 		std::string GetPath(std::string ppath1, std::string ppath2);
 		ClientType clientType();
+		uint32_t SupportedActions();
 
 	private:
 		int _Rmdir(const std::string &path);

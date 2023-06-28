@@ -5,6 +5,9 @@
 #include <vector>
 #include <string.h>
 
+#define MIN(a,b) (((a)<(b))?(a):(b))
+#define MAX(a,b) (((a)>(b))?(a):(b))
+
 typedef struct
 {
     uint16_t year;
@@ -28,6 +31,7 @@ struct DirEntry
     bool isDir;
     bool isLink;
     DateTime modified;
+    bool selectable;
 
     friend bool operator<(DirEntry const &a, DirEntry const &b)
     {
@@ -58,6 +62,26 @@ struct DirEntry
     static void Sort(std::vector<DirEntry> &list)
     {
         qsort(&list[0], list.size(), sizeof(DirEntry), DirEntryComparator);
+    }
+
+    static void SetDisplaySize(DirEntry *entry)
+    {
+        if (entry->file_size < 1024)
+        {
+            sprintf(entry->display_size, "%ldB", entry->file_size);
+        }
+        else if (entry->file_size < 1024 * 1024)
+        {
+            sprintf(entry->display_size, "%.2fKB", entry->file_size * 1.0f / 1024);
+        }
+        else if (entry->file_size < 1024 * 1024 * 1024)
+        {
+            sprintf(entry->display_size, "%.2fMB", entry->file_size * 1.0f / (1024 * 1024));
+        }
+        else
+        {
+            sprintf(entry->display_size, "%.2fGB", entry->file_size * 1.0f / (1024 * 1024 * 1024));
+        }
     }
 };
 

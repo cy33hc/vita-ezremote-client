@@ -43,7 +43,8 @@ int SmbClient::Connect(const std::string &url, const std::string &user, const st
 	}
 
 	debugNetPrintf(DEBUG, "response=%s\n", response);
-	smb_url = smb2_parse_url(smb2, url.c_str());
+	smb2_context *tmp_smb2 = smb2_init_context();
+	smb_url = smb2_parse_url(tmp_smb2, url.c_str());
 	if (pass.length() > 0)
 		smb2_set_password(smb2, pass.c_str());
 	smb2_set_security_mode(smb2, SMB2_NEGOTIATE_SIGNING_ENABLED);
@@ -55,6 +56,7 @@ int SmbClient::Connect(const std::string &url, const std::string &user, const st
 		return 0;
 	}
 	smb2_destroy_url(smb_url);
+	smb2_destroy_context(tmp_smb2);
 
 	max_read_size = smb2_get_max_read_size(smb2);
 	max_write_size = smb2_get_max_write_size(smb2);
@@ -236,43 +238,16 @@ int SmbClient::Get(const std::string &outputfile, const std::string &ppath, uint
 	return 1;
 }
 
-int SmbClient::Copy(const std::string &ppath, int socket_fd)
+int SmbClient::Copy(const std::string &ffrom, const std::string &tto)
 {
-	std::string path = std::string(ppath);
-	path = Util::Trim(path, "/");
-	if (!IsConnected())
-	{
-		sprintf(response, "%s", smb2_get_error(smb2));
-		return 0;
-	}
+	sprintf(response, "%s", lang_strings[STR_UNSUPPORTED_OPERATION_MSG]);
+	return 0;
+}
 
-	struct smb2fh* in = smb2_open(smb2, path.c_str(), O_RDONLY);
-	if (in == NULL)
-	{
-		sprintf(response, "%s", smb2_get_error(smb2));
-		return 0;
-	}
-
-	uint8_t *buff = (uint8_t*)malloc(max_read_size);
-	int count = 0;
-	while ((count = smb2_read(smb2, in, buff, max_read_size)) > 0)
-	{
-		if (count < 0)
-		{
-			sprintf(response, "%s", smb2_get_error(smb2));
-			smb2_close(smb2, in);
-			free((void*)buff);
-			return 0;
-		}
-		int ret = sceNetSend(socket_fd, buff, count, 0);
-		if (ret < 0)
-		{
-			break;
-		}
-	}
-	smb2_close(smb2, in);
-	free((void*)buff);
-	return 1;
+int SmbClient::Move(const std::string &ffrom, const std::string &tto)
+{
+	sprintf(response, "%s", lang_strings[STR_UNSUPPORTED_OPERATION_MSG]);
+	return 0;
 }
 
 bool SmbClient::FileExists(const std::string &ppath)
@@ -392,20 +367,7 @@ std::vector<DirEntry> SmbClient::ListDir(const std::string &path)
 {
 	std::vector<DirEntry> out;
 	DirEntry entry;
-	memset(&entry, 0, sizeof(DirEntry));
-	if (path.length() > 1 && path[path.length() - 1] == '/')
-	{
-		strlcpy(entry.directory, path.c_str(), path.length() - 1);
-	}
-	else
-	{
-		sprintf(entry.directory, "%s", path.c_str());
-	}
-	sprintf(entry.name, "..");
-	sprintf(entry.path, "%s", entry.directory);
-	sprintf(entry.display_size, "%s", lang_strings[STR_FOLDER]);
-	entry.file_size = 0;
-	entry.isDir = true;
+	Util::SetupPreviousFolder(path, &entry);
 	out.push_back(entry);
 
 	struct smb2dir *dir;
@@ -428,6 +390,7 @@ std::vector<DirEntry> SmbClient::ListDir(const std::string &path)
 		snprintf(entry.directory, 511, "%s", path.c_str());
 		snprintf(entry.name, 255, "%s", ent->name);
 		entry.file_size = ent->st.smb2_size;
+		entry.selectable = true;
 		if (path.length() > 0 && path[path.length() - 1] == '/')
 		{
 			sprintf(entry.path, "%s%s", path.c_str(), ent->name);
@@ -521,4 +484,9 @@ int SmbClient::Head(const std::string &ppath, void* buffer, uint16_t len)
 ClientType SmbClient::clientType()
 {
 	return CLIENT_TYPE_SMB;
+}
+
+uint32_t SmbClient::SupportedActions()
+{
+	return REMOTE_ACTION_ALL ^ REMOTE_ACTION_CUT ^ REMOTE_ACTION_COPY ^ REMOTE_ACTION_PASTE;
 }

@@ -156,6 +156,68 @@ namespace FS
         return data;
     }
 
+    bool LoadText(std::vector<std::string> *lines, const std::string &path)
+    {
+        FILE *fd = fopen(path.c_str(), "rb");
+        if (fd == nullptr)
+            return false;
+
+        lines->clear();
+
+        char buffer[1024];
+        short bytes_read;
+        std::vector<char> line = std::vector<char>(0);
+        do
+        {
+            bytes_read = fread(buffer, sizeof(char), 1024, fd);
+            if (bytes_read < 0)
+            {
+                fclose(fd);
+                return false;
+            }
+
+            for (short i = 0; i < bytes_read; i++)
+            {
+                if (buffer[i] != '\r' && buffer[i] != '\n')
+                {
+                    line.push_back(buffer[i]);
+                }
+                else
+                {
+                    lines->push_back(std::string(line.data(), line.size()));
+                    line = std::vector<char>(0);
+                    if (buffer[i] == '\r' && buffer[i+1] == '\n')
+                        i++;
+                }
+            }
+        } while (bytes_read == 1024);
+        if (line.size()>0)
+            lines->push_back(std::string(line.data(), line.size()));
+ 
+        fclose(fd);
+        if (lines->size() == 0)
+            lines->push_back("");
+        return true;
+    }
+
+    bool SaveText(std::vector<std::string> *lines, const std::string &path)
+    {
+        FILE *fd = OpenRW(path);
+        if (fd == nullptr)
+            return false;
+
+        char nl[1] = {'\n'};
+        for (int i=0; i < lines->size(); i++)
+        {
+            Write(fd, lines->at(i).c_str(), lines->at(i).length());
+            Write(fd, nl, 1);
+        }
+
+        fclose(fd);
+
+        return true;
+    }
+
     void Save(const std::string &path, const void *data, uint32_t size)
     {
         SceUID fd = sceIoOpen(
@@ -175,22 +237,11 @@ namespace FS
         }
     }
 
-    std::vector<DirEntry> ListDir(const std::string &ppath, int *err)
+    std::vector<DirEntry> ListDir(const std::string &path, int *err)
     {
         std::vector<DirEntry> out;
         DirEntry entry;
-        std::string path = ppath;
-        if (path.find_last_of("/") == path.size() - 1)
-        {
-            path = path.substr(0, path.size() - 1);
-        }
-        memset(&entry, 0, sizeof(DirEntry));
-        sprintf(entry.directory, "%s", path.c_str());
-        sprintf(entry.name, "..");
-        sprintf(entry.display_size, lang_strings[STR_FOLDER]);
-        sprintf(entry.path, "%s", path.c_str());
-        entry.file_size = 0;
-        entry.isDir = true;
+        Util::SetupPreviousFolder(path, &entry);
         out.push_back(entry);
 
         const auto fd = sceIoDopen(path.c_str());
@@ -205,6 +256,7 @@ namespace FS
         {
             SceIoDirent dirent;
             DirEntry entry;
+            entry.selectable = true;
             const auto ret = sceIoDread(fd, &dirent);
             if (ret < 0)
             {
@@ -401,5 +453,83 @@ namespace FS
         path1 = Util::Rtrim(path1, "/");
         path2 = Util::Rtrim(Util::Trim(path2, " "), "/");
         return path1 + "/" + path2;
+    }
+
+    int Head(const std::string &path, void *buffer, uint16_t len)
+    {
+        FILE *file = OpenRead(path);
+        if (file == nullptr)
+            return 0;
+        int ret = Read(file, buffer, len);
+        if (ret != len)
+        {
+            Close(file);
+            return 0;
+        }
+        Close(file);
+        return 1;
+    }
+
+    bool Copy(const std::string &from, const std::string &to)
+    {
+        MkDirs(to, true);
+        FILE *src = OpenRead(from);
+        if (!src)
+        {
+            return false;
+        }
+
+        bytes_to_download = GetSize(from);
+
+        FILE *dest = OpenRW(to);
+        if (!dest)
+        {
+            Close(src);
+            return false;
+        }
+
+        size_t bytes_read = 0;
+        bytes_transfered = 0;
+        const size_t buf_size = 0x10000;
+        unsigned char *buf = new unsigned char[buf_size];
+
+        do
+        {
+            bytes_read = Read(src, buf, buf_size);
+            if (bytes_read < 0)
+            {
+                delete[] buf;
+                Close(src);
+                Close(dest);
+                return false;
+            }
+
+            size_t bytes_written = Write(dest, buf, bytes_read);
+            if (bytes_written != bytes_read)
+            {
+                delete[] buf;
+                Close(src);
+                Close(dest);
+                return false;
+            }
+
+            bytes_transfered += bytes_read;
+        } while (bytes_transfered < bytes_to_download);
+
+        delete[] buf;
+        Close(src);
+        Close(dest);
+        return true;
+    }
+
+    bool Move(const std::string &from, const std::string &to)
+    {
+        bool res = Copy(from, to);
+        if (res)
+            RmRecursive(from);
+        else
+            return res;
+
+        return true;
     }
 }
