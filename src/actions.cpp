@@ -3,6 +3,7 @@
 #include "clients/remote_client.h"
 #include "clients/smbclient.h"
 #include "clients/ftpclient.h"
+#include "clients/nfsclient.h"
 #include "clients/webdavclient.h"
 #include "config.h"
 #include "common.h"
@@ -630,6 +631,10 @@ namespace Actions
             ftpclient->SetCallbackBytes(256000);
             ftpclient->SetCallbackXferFunction(FtpCallback);
             client = ftpclient;
+        }
+        else if (strncmp(remote_settings->server, "nfs://", 6) == 0)
+        {
+            client = new NfsClient();
         }
         else
         {

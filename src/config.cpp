@@ -28,6 +28,7 @@ std::vector<std::string> sites;
 std::vector<std::string> http_servers;
 std::map<std::string, RemoteSettings> site_settings;
 bool warn_missing_installs;
+bool show_hidden_files;
 
 namespace CONFIG
 {
@@ -61,6 +62,9 @@ namespace CONFIG
 
         warn_missing_installs = ReadBool(CONFIG_GLOBAL, CONFIG_UPDATE_WARN_MISSING, true);
         WriteBool(CONFIG_GLOBAL, CONFIG_UPDATE_WARN_MISSING, warn_missing_installs);
+
+        show_hidden_files = ReadBool(CONFIG_GLOBAL, CONFIG_SHOW_HIDDEN_FILES, false);
+        WriteBool(CONFIG_GLOBAL, CONFIG_SHOW_HIDDEN_FILES, show_hidden_files);
 
         for (int i = 0; i < sites.size(); i++)
         {

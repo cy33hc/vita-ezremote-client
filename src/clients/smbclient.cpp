@@ -258,7 +258,6 @@ bool SmbClient::FileExists(const std::string &ppath)
 	int ret = smb2_stat(smb2, path.c_str(), &st);
 	if (ret != 0)
 	{
-		sprintf(response, "%s", smb2_get_error(smb2));
 		return false;
 	}
 

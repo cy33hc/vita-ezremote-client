@@ -45,13 +45,13 @@ namespace Textures {
 	}
 	
 	void Init(void) {
-		Textures::LoadImageFile("ux0:app/WDVCLI001/icons/connect.png", &connect_icon);
-		Textures::LoadImageFile("ux0:app/WDVCLI001/icons/disconnect.png", &disconnect_icon);
-		Textures::LoadImageFile("ux0:app/WDVCLI001/icons/search.png", &search_icon);
-		Textures::LoadImageFile("ux0:app/WDVCLI001/icons/refresh.png", &refresh_icon);
-		Textures::LoadImageFile("ux0:app/WDVCLI001/icons/folder.png", &folder_icon);
-		Textures::LoadImageFile("ux0:app/WDVCLI001/icons/file.png", &file_icon);
-		Textures::LoadImageFile("ux0:app/WDVCLI001/icons/update.png", &update_icon);
+		Textures::LoadImageFile("ux0:app/RMTCLI001/icons/connect.png", &connect_icon);
+		Textures::LoadImageFile("ux0:app/RMTCLI001/icons/disconnect.png", &disconnect_icon);
+		Textures::LoadImageFile("ux0:app/RMTCLI001/icons/search.png", &search_icon);
+		Textures::LoadImageFile("ux0:app/RMTCLI001/icons/refresh.png", &refresh_icon);
+		Textures::LoadImageFile("ux0:app/RMTCLI001/icons/folder.png", &folder_icon);
+		Textures::LoadImageFile("ux0:app/RMTCLI001/icons/file.png", &file_icon);
+		Textures::LoadImageFile("ux0:app/RMTCLI001/icons/update.png", &update_icon);
 	}
 
 	void Exit(void) {

@@ -15,7 +15,8 @@ set(VITA_APP_NAME "ezRemote Client")
 set(VITA_TITLEID  "RMTCLI001")
 set(VITA_VERSION  "01.00")
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fpermissive")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fpermissive -fno-PIC -fno-PIE")
+set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fno-PIC -fno-PIE")
 
 include_directories(
   src
@@ -23,6 +24,7 @@ include_directories(
 
 add_executable(${PROJECT_NAME}
   src/clients/ftpclient.cpp
+  src/clients/nfsclient.cpp
   src/clients/webdavclient.cpp
   src/clients/smbclient.cpp
   src/textures.cpp
@@ -64,6 +66,7 @@ target_link_libraries(${PROJECT_NAME}
   curl
   ssl
   crypto
+  nfs
   smb2
   stdc++
   c

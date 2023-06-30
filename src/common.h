@@ -5,6 +5,7 @@
 #include <vector>
 #include <string.h>
 
+#define HTTP_SUCCESS(x) (x >= 200 && x < 300)
 #define MIN(a,b) (((a)<(b))?(a):(b))
 #define MAX(a,b) (((a)>(b))?(a):(b))
 

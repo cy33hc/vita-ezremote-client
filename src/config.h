@@ -23,6 +23,7 @@
 
 #define CONFIG_GLOBAL "Global"
 
+#define CONFIG_SHOW_HIDDEN_FILES "show_hidden_files"
 #define CONFIG_DEFAULT_STYLE_NAME "Default"
 #define CONFIG_SWAP_XO "swap_xo"
 
@@ -83,6 +84,7 @@ extern char language[32];
 extern RemoteSettings *remote_settings;
 extern bool warn_missing_installs;
 extern RemoteClient *client;
+extern bool show_hidden_files;
 
 namespace CONFIG
 {
