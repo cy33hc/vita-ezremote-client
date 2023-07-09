@@ -190,6 +190,7 @@ namespace Windows {
     void AfterRemoteFileChangesCallback(int ime_result);
     void AfterFolderNameCallback(int ime_result);
     void CancelActionCallBack(int ime_result);
+    void AferServerChangeCallback(int ime_result);
 }
 
 #endif

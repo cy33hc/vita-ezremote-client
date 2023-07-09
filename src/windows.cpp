@@ -190,48 +190,17 @@ namespace Windows
         ImGui::SameLine();
 
         bool is_connected = (client != nullptr) ? client->IsConnected() : false;
-        if (is_connected)
-        {
-            ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
-            ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.3f);
-        }
+        void *icon = is_connected ? (void *)disconnect_icon: (void *)connect_icon;
+        sprintf(id, "###connectbutton");
         ImGui::SetCursorPosX(ImGui::GetCursorPosX() - 2);
-        if (ImGui::ImageButton((void *)connect_icon, ImVec2(25, 25)))
+        if (ImGui::ImageButtonEx(id, (void *)icon, ImVec2(25, 25),ImVec2(0,0), ImVec2(1,1), style->FramePadding, ImVec4(0,0,0,0), ImVec4(1,1,1,1)))
         {
-            selected_action = ACTION_CONNECT;
-        }
-        if (is_connected)
-        {
-            ImGui::PopItemFlag();
-            ImGui::PopStyleVar();
+            selected_action = is_connected ? ACTION_DISCONNECT : ACTION_CONNECT;
         }
         if (ImGui::IsItemHovered())
         {
             ImGui::BeginTooltip();
-            ImGui::Text(lang_strings[STR_CONNECT]);
-            ImGui::EndTooltip();
-        }
-        ImGui::SameLine();
-
-        if (!is_connected)
-        {
-            ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
-            ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.3f);
-        }
-        ImGui::SetCursorPosX(ImGui::GetCursorPosX() - 2);
-        if (ImGui::ImageButton((void *)disconnect_icon, ImVec2(25, 25)))
-        {
-            selected_action = ACTION_DISCONNECT;
-        }
-        if (!is_connected)
-        {
-            ImGui::PopItemFlag();
-            ImGui::PopStyleVar();
-        }
-        if (ImGui::IsItemHovered())
-        {
-            ImGui::BeginTooltip();
-            ImGui::Text(lang_strings[STR_DISCONNECT]);
+            ImGui::Text("%s", is_connected ? lang_strings[STR_DISCONNECT] : lang_strings[STR_CONNECT]);
             ImGui::EndTooltip();
         }
         ImGui::SameLine();
@@ -261,47 +230,54 @@ namespace Windows
         }
         ImGui::SameLine();
 
+        int width = 290;
+        if (remote_settings->type == CLIENT_TYPE_NFS)
+            width = 600;
         ImGui::PushStyleVar(ImGuiStyleVar_ButtonTextAlign, ImVec2(0.0f, 1.0f));
-        if (ImGui::Button(remote_settings->server, ImVec2(290, 0)))
+        if (ImGui::Button(remote_settings->server, ImVec2(width, 0)))
         {
             ime_single_field = remote_settings->server;
             ResetImeCallbacks();
             ime_field_size = 255;
             ime_callback = SingleValueImeCallback;
+            ime_after_update = AferServerChangeCallback;
             Dialog::initImeDialog(lang_strings[STR_SERVER], remote_settings->server, 255, SCE_IME_TYPE_DEFAULT, 0, 0);
             gui_mode = GUI_MODE_IME;
         }
-        ImGui::SameLine();
 
-        ImGui::TextColored(colors[ImGuiCol_ButtonHovered], "%s:", lang_strings[STR_USERNAME]);
-        ImGui::SameLine();
-        ImGui::SetCursorPosX(ImGui::GetCursorPosX() - 4);
-        sprintf(id, "%s##username", remote_settings->username);
-        if (ImGui::Button(id, ImVec2(95, 0)))
+        if (remote_settings->type != CLIENT_TYPE_NFS)
         {
-            ime_single_field = remote_settings->username;
-            ResetImeCallbacks();
-            ime_field_size = 47;
-            ime_callback = SingleValueImeCallback;
-            Dialog::initImeDialog(lang_strings[STR_USERNAME], remote_settings->username, 47, SCE_IME_TYPE_DEFAULT, 0, 0);
-            gui_mode = GUI_MODE_IME;
-        }
-        ImGui::SameLine();
+            ImGui::SameLine();
+            ImGui::TextColored(colors[ImGuiCol_ButtonHovered], "%s:", lang_strings[STR_USERNAME]);
+            ImGui::SameLine();
+            ImGui::SetCursorPosX(ImGui::GetCursorPosX() - 4);
+            sprintf(id, "%s##username", remote_settings->username);
+            if (ImGui::Button(id, ImVec2(95, 0)))
+            {
+                ime_single_field = remote_settings->username;
+                ResetImeCallbacks();
+                ime_field_size = 47;
+                ime_callback = SingleValueImeCallback;
+                Dialog::initImeDialog(lang_strings[STR_USERNAME], remote_settings->username, 47, SCE_IME_TYPE_DEFAULT, 0, 0);
+                gui_mode = GUI_MODE_IME;
+            }
+            ImGui::SameLine();
 
-        ImGui::TextColored(colors[ImGuiCol_ButtonHovered], "%s:", lang_strings[STR_PASSWORD]);
-        ImGui::SameLine();
-        ImGui::SetCursorPosX(ImGui::GetCursorPosX() - 4);
-        sprintf(id, "%s##password", hidden_password.c_str());
-        if (ImGui::Button(id, ImVec2(60, 0)))
-        {
-            ime_single_field = remote_settings->password;
-            ResetImeCallbacks();
-            ime_field_size = 31;
-            ime_callback = SingleValueImeCallback;
-            Dialog::initImeDialog(lang_strings[STR_PASSWORD], remote_settings->password, 31, SCE_IME_TYPE_DEFAULT, 0, 0);
-            gui_mode = GUI_MODE_IME;
+            ImGui::TextColored(colors[ImGuiCol_ButtonHovered], "%s:", lang_strings[STR_PASSWORD]);
+            ImGui::SameLine();
+            ImGui::SetCursorPosX(ImGui::GetCursorPosX() - 4);
+            sprintf(id, "%s##password", hidden_password.c_str());
+            if (ImGui::Button(id, ImVec2(60, 0)))
+            {
+                ime_single_field = remote_settings->password;
+                ResetImeCallbacks();
+                ime_field_size = 31;
+                ime_callback = SingleValueImeCallback;
+                Dialog::initImeDialog(lang_strings[STR_PASSWORD], remote_settings->password, 31, SCE_IME_TYPE_DEFAULT, 0, 0);
+                gui_mode = GUI_MODE_IME;
+            }
+            ImGui::SameLine();
         }
-        ImGui::SameLine();
 
         ImGui::PopStyleVar();
         EndGroupPanel();
@@ -1468,6 +1444,14 @@ namespace Windows
     void CancelActionCallBack(int ime_result)
     {
         selected_action = ACTION_NONE;
+    }
+
+    void AferServerChangeCallback(int ime_result)
+    {
+        if (ime_result == IME_DIALOG_RESULT_FINISHED)
+        {
+            CONFIG::SetClientType(remote_settings);
+        }
     }
 
 }

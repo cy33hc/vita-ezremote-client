@@ -1,6 +1,10 @@
 #include <vitasdk.h>
 #include <string.h>
 #include "clients/remote_client.h"
+#include "clients/apache.h"
+#include "clients/iis.h"
+#include "clients/nginx.h"
+#include "clients/npxserve.h"
 #include "clients/smbclient.h"
 #include "clients/ftpclient.h"
 #include "clients/nfsclient.h"
@@ -493,7 +497,9 @@ namespace Actions
         if (src.isDir)
         {
             int err;
+            debugNetPrintf(DEBUG, "Download - before ListDir\n");
             std::vector<DirEntry> entries = client->ListDir(src.path);
+            debugNetPrintf(DEBUG, "Download - after ListDir\n");
             FS::MkDirs(dest);
             for (int i = 0; i < entries.size(); i++)
             {
@@ -635,6 +641,10 @@ namespace Actions
         else if (strncmp(remote_settings->server, "nfs://", 6) == 0)
         {
             client = new NfsClient();
+        }
+        else if (strncmp(remote_settings->server, "http://", 7) == 0 || strncmp(remote_settings->server, "https://", 8) == 0)
+        {
+            client = new IISClient();
         }
         else
         {

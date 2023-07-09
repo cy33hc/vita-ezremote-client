@@ -333,7 +333,7 @@ namespace Services
 	}
 } // namespace Services
 
-#define ip_server "192.168.100.200"
+#define ip_server "192.168.100.60"
 #define port_server 18194
 
 unsigned int _newlib_heap_size_user = 190 * 1024 * 1024;

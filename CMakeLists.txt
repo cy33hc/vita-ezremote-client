@@ -18,15 +18,24 @@ set(VITA_VERSION  "01.00")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fpermissive -fno-PIC -fno-PIE")
 set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fno-PIC -fno-PIE")
 
+add_definitions(-DCPPHTTPLIB_OPENSSL_SUPPORT)
+
 include_directories(
   src
 )
 
 add_executable(${PROJECT_NAME}
+  src/clients/baseclient.cpp
+  src/clients/iis.cpp
+  src/clients/apache.cpp
+  src/clients/nginx.cpp
+  src/clients/npxserve.cpp
   src/clients/ftpclient.cpp
   src/clients/nfsclient.cpp
   src/clients/webdavclient.cpp
   src/clients/smbclient.cpp
+  src/http/vita_compat.c
+  src/http/httplib.cpp
   src/textures.cpp
   src/fs.cpp
   src/main.cpp
@@ -55,22 +64,24 @@ add_executable(${PROJECT_NAME}
 )
 
 target_link_libraries(${PROJECT_NAME}
+  stdc++
+  c
   debugnet
+  lexbor
+  lexbor_static
   imgui
   vita2d
   vitaGL
   vitashark
   mathneon
-  pthread
   png
+  z
   curl
   ssl
   crypto
+  pthread
   nfs
   smb2
-  stdc++
-  c
-  z
   SceCommonDialog_stub
   SceLibKernel_stub
   SceDisplay_stub
@@ -93,6 +104,8 @@ target_link_libraries(${PROJECT_NAME}
   m
   SceAppMgr_stub
   SceAppUtil_stub
+  SceShaccCgExt
+  taihen_stub
   SceShaccCg_stub
 )
 
