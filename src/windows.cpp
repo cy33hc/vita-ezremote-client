@@ -90,7 +90,7 @@ namespace Windows
 {
     void Init()
     {
-        client = NULL;
+        remoteclient = NULL;
 
         sprintf(local_file_to_select, "..");
         sprintf(remote_file_to_select, "..");
@@ -173,6 +173,7 @@ namespace Windows
         std::string hidden_password = std::string("xxxxxxx");
 
         ImGui::SetCursorPosX(ImGui::GetCursorPosX() + 4);
+        /*
         if (ImGui::ImageButton((void *)update_icon, ImVec2(25, 25)))
         {
             selected_action = ACTION_UPDATE_SOFTWARE;
@@ -183,13 +184,12 @@ namespace Windows
             ImGui::Text(lang_strings[STR_UPDATE_SOFTWARE]);
             ImGui::EndTooltip();
         }
+        */
         if (ImGui::IsWindowAppearing())
         {
             ImGui::SetItemDefaultFocus();
         }
-        ImGui::SameLine();
-
-        bool is_connected = (client != nullptr) ? client->IsConnected() : false;
+        bool is_connected = (remoteclient != nullptr) ? remoteclient->IsConnected() : false;
         void *icon = is_connected ? (void *)disconnect_icon: (void *)connect_icon;
         sprintf(id, "###connectbutton");
         ImGui::SetCursorPosX(ImGui::GetCursorPosX() - 2);
@@ -245,6 +245,28 @@ namespace Windows
             gui_mode = GUI_MODE_IME;
         }
 
+        if (remote_settings->type == CLIENT_TYPE_HTTP_SERVER)
+        {
+            ImGui::SameLine();
+            ImGui::SetNextItemWidth(100);
+            if (ImGui::BeginCombo("##HttpServer", remote_settings->http_server_type, ImGuiComboFlags_PopupAlignLeft | ImGuiComboFlags_HeightLargest | ImGuiComboFlags_NoArrowButton))
+            {
+                for (int n = 0; n < http_servers.size(); n++)
+                {
+                    const bool is_selected = strcmp(http_servers[n].c_str(), remote_settings->http_server_type) == 0;
+                    if (ImGui::Selectable(http_servers[n].c_str(), is_selected))
+                    {
+                        sprintf(remote_settings->http_server_type, "%s", http_servers[n].c_str());
+                    }
+                    // Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
+                    if (is_selected)
+                        ImGui::SetItemDefaultFocus();
+                }
+                ImGui::EndCombo();
+            }
+            ImGui::SameLine();
+        }
+
         if (remote_settings->type != CLIENT_TYPE_NFS)
         {
             ImGui::SameLine();
@@ -266,6 +288,7 @@ namespace Windows
             ImGui::TextColored(colors[ImGuiCol_ButtonHovered], "%s:", lang_strings[STR_PASSWORD]);
             ImGui::SameLine();
             ImGui::SetCursorPosX(ImGui::GetCursorPosX() - 4);
+            if (strlen(remote_settings->password) == 0) hidden_password = "";
             sprintf(id, "%s##password", hidden_password.c_str());
             if (ImGui::Button(id, ImVec2(60, 0)))
             {
@@ -616,7 +639,7 @@ namespace Windows
 
         if ((local_browser_selected && selected_local_file.selectable) ||
             (remote_browser_selected && selected_remote_file.selectable &&
-             client != nullptr && (client->SupportedActions() & remote_action)))
+             remoteclient != nullptr && (remoteclient->SupportedActions() & remote_action)))
         {
             flag = ImGuiSelectableFlags_None;
         }
@@ -706,7 +729,7 @@ namespace Windows
             flags = ImGuiSelectableFlags_Disabled;
             if ((local_browser_selected && local_paste_files.size() > 0) ||
                 (remote_browser_selected && remote_paste_files.size() > 0 &&
-                 client != nullptr && (client->SupportedActions() | REMOTE_ACTION_PASTE)))
+                 remoteclient != nullptr && (remoteclient->SupportedActions() | REMOTE_ACTION_PASTE)))
                 flags = ImGuiSelectableFlags_None;
             if (ImGui::Selectable(lang_strings[STR_PASTE], false, flags | ImGuiSelectableFlags_DontClosePopups, ImVec2(220, 0)))
             {
@@ -769,7 +792,7 @@ namespace Windows
             ImGui::Separator();
 
             flags = ImGuiSelectableFlags_None;
-            if (remote_browser_selected && client != nullptr && !(client->SupportedActions() & REMOTE_ACTION_NEW_FOLDER))
+            if (remote_browser_selected && remoteclient != nullptr && !(remoteclient->SupportedActions() & REMOTE_ACTION_NEW_FOLDER))
             {
                 flags = ImGuiSelectableFlags_Disabled;
             }
@@ -788,7 +811,7 @@ namespace Windows
 
             ImGui::PushID("New File##settings");
             flags = ImGuiSelectableFlags_None;
-            if (remote_browser_selected && client != nullptr && !(client->SupportedActions() & REMOTE_ACTION_NEW_FILE))
+            if (remote_browser_selected && remoteclient != nullptr && !(remoteclient->SupportedActions() & REMOTE_ACTION_NEW_FILE))
             {
                 flags = ImGuiSelectableFlags_Disabled;
             }
@@ -806,7 +829,7 @@ namespace Windows
 
             ImGui::PushID("Edit##settings");
             flags = ImGuiSelectableFlags_None;
-            if ((remote_browser_selected && client != nullptr && (!(client->SupportedActions() & REMOTE_ACTION_EDIT) || selected_remote_file.isDir)) ||
+            if ((remote_browser_selected && remoteclient != nullptr && (!(remoteclient->SupportedActions() & REMOTE_ACTION_EDIT) || selected_remote_file.isDir)) ||
                 (local_browser_selected && selected_local_file.isDir))
             {
                 flags = ImGuiSelectableFlags_Disabled;
@@ -828,7 +851,7 @@ namespace Windows
                 {
                     if (selected_remote_file.file_size > MAX_EDIT_FILE_SIZE)
                         can_edit = false;
-                    else if (client != nullptr && client->Get(TMP_EDITOR_FILE, selected_remote_file.path))
+                    else if (remoteclient != nullptr && remoteclient->Get(TMP_EDITOR_FILE, selected_remote_file.path))
                     {
                         snprintf(edit_file, 255, "%s", selected_remote_file.path);
                         FS::LoadText(&edit_buffer, TMP_EDITOR_FILE);
@@ -849,7 +872,7 @@ namespace Windows
             if (local_browser_selected)
             {
                 flags = getSelectableFlag(REMOTE_ACTION_UPLOAD);
-                if (local_browser_selected && client != nullptr && !(client->SupportedActions() & REMOTE_ACTION_UPLOAD))
+                if (local_browser_selected && remoteclient != nullptr && !(remoteclient->SupportedActions() & REMOTE_ACTION_UPLOAD))
                 {
                     flags = ImGuiSelectableFlags_Disabled;
                 }

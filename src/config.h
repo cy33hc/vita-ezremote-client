@@ -34,6 +34,7 @@
 #define CONFIG_REMOTE_SERVER "remote_server"
 #define CONFIG_REMOTE_SERVER_USER "remote_server_user"
 #define CONFIG_REMOTE_SERVER_PASSWORD "remote_server_password"
+#define CONFIG_REMOTE_HTTP_SERVER_TYPE "remote_server_http_server_type"
 
 #define CONFIG_LAST_SITE "last_site"
 
@@ -43,14 +44,23 @@
 
 #define CONFIG_LANGUAGE "language"
 
-#define CONFIG_GOOGLE_ACCESS_TOKEN "google_access_token"
-#define CONFIG_GOOGLE_REFRESH_TOKEN "google_refresh_token"
-#define CONFIG_GOOGLE_TOKEN_EXPIRY "google_token_expiry"
-
 #define HTTP_SERVER_APACHE "Apache"
 #define HTTP_SERVER_MS_IIS "Microsoft IIS"
 #define HTTP_SERVER_NGINX "Nginx"
 #define HTTP_SERVER_NPX_SERVE "Serve"
+
+#define GOOGLE_OAUTH_HOST "https://oauth2.googleapis.com"
+#define GOOGLE_AUTH_URL "https://oauth2.googleapis.com/device/code"
+#define GOOGLE_API_URL "https://www.googleapis.com"
+#define GOOGLE_DRIVE_API_PATH "/drive/v2/files"
+#define GOOGLE_DRIVE_BASE_URL "https://drive.google.com"
+#define GOOGLE_PERM_DRIVE "drive"
+#define GOOGLE_PERM_DRIVE_APPDATA "drive.appdata"
+#define GOOGLE_PERM_DRIVE_FILE "drive.file"
+#define GOOGLE_PERM_DRIVE_METADATA "drive.metadata"
+#define GOOGLE_PERM_DRIVE_METADATA_RO "drive.metadata.readonly"
+#define GOOGLE_DEFAULT_PERMISSIONS GOOGLE_PERM_DRIVE
+#define GOOGLE_SERVICE_ACCOUNT_PATH DATA_PATH "/google_serviceaccount.json"
 
 struct GoogleAccountInfo
 {
@@ -59,13 +69,19 @@ struct GoogleAccountInfo
     uint64_t token_expiry;
 };
 
+struct GoogleAppInfo
+{
+    char client_id[140];
+    char client_secret[64];
+    char permissions[92];
+};
+
 struct RemoteSettings
 {
     char site_name[32];
     char server[256];
     char username[33];
     char password[128];
-    int http_port;
     ClientType type;
     char http_server_type[24];
     GoogleAccountInfo gg_account;
@@ -83,7 +99,8 @@ extern char display_site[64];
 extern char language[32];
 extern RemoteSettings *remote_settings;
 extern bool warn_missing_installs;
-extern RemoteClient *client;
+extern RemoteClient *remoteclient;
+extern GoogleAppInfo gg_app;
 extern bool show_hidden_files;
 
 namespace CONFIG

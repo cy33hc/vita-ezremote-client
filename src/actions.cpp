@@ -5,6 +5,7 @@
 #include "clients/iis.h"
 #include "clients/nginx.h"
 #include "clients/npxserve.h"
+#include "clients/gdrive.h"
 #include "clients/smbclient.h"
 #include "clients/ftpclient.h"
 #include "clients/nfsclient.h"
@@ -55,9 +56,9 @@ namespace Actions
 
     void RefreshRemoteFiles(bool apply_filter)
     {
-        if (!client->Ping())
+        if (!remoteclient->Ping())
         {
-            client->Quit();
+            remoteclient->Quit();
             sprintf(status_message, "%s", lang_strings[STR_CONNECTION_CLOSE_ERR_MSG]);
             return;
         }
@@ -66,7 +67,7 @@ namespace Actions
         remote_files.clear();
         if (strlen(remote_filter) > 0 && apply_filter)
         {
-            std::vector<DirEntry> temp_files = client->ListDir(remote_directory);
+            std::vector<DirEntry> temp_files = remoteclient->ListDir(remote_directory);
             std::string lower_filter = Util::ToLower(remote_filter);
             for (std::vector<DirEntry>::iterator it = temp_files.begin(); it != temp_files.end();)
             {
@@ -81,10 +82,10 @@ namespace Actions
         }
         else
         {
-            remote_files = client->ListDir(remote_directory);
+            remote_files = remoteclient->ListDir(remote_directory);
         }
         DirEntry::Sort(remote_files);
-        sprintf(status_message, "%s", client->LastResponse());
+        sprintf(status_message, "%s", remoteclient->LastResponse());
     }
 
     void HandleChangeLocalDirectory(const DirEntry entry)
@@ -115,9 +116,9 @@ namespace Actions
         if (!entry.isDir)
             return;
 
-        if (!client->Ping())
+        if (!remoteclient->Ping())
         {
-            client->Quit();
+            remoteclient->Quit();
             sprintf(status_message, "%s", lang_strings[STR_CONNECTION_CLOSE_ERR_MSG]);
             return;
         }
@@ -164,12 +165,15 @@ namespace Actions
 
     void HandleRefreshRemoteFiles()
     {
-        int prev_count = remote_files.size();
-        RefreshRemoteFiles(false);
-        int new_count = remote_files.size();
-        if (prev_count != new_count)
+        if (remoteclient != nullptr)
         {
-            sprintf(remote_file_to_select, "%s", remote_files[0].name);
+            int prev_count = remote_files.size();
+            RefreshRemoteFiles(false);
+            int new_count = remote_files.size();
+            if (prev_count != new_count)
+            {
+                sprintf(remote_file_to_select, "%s", remote_files[0].name);
+            }
         }
         selected_action = ACTION_NONE;
     }
@@ -190,15 +194,15 @@ namespace Actions
         sprintf(status_message, "%s", "");
         std::string folder = std::string(new_folder);
         folder = Util::Rtrim(Util::Trim(folder, " "), "/");
-        std::string path = client->GetPath(remote_directory, folder);
-        if (client->Mkdir(path.c_str()))
+        std::string path = remoteclient->GetPath(remote_directory, folder);
+        if (remoteclient->Mkdir(path.c_str()))
         {
             RefreshRemoteFiles(false);
             sprintf(remote_file_to_select, "%s", folder.c_str());
         }
         else
         {
-            sprintf(status_message, "%s - %s", lang_strings[STR_FAILED], client->LastResponse());
+            sprintf(status_message, "%s - %s", lang_strings[STR_FAILED], remoteclient->LastResponse());
         }
     }
 
@@ -219,7 +223,7 @@ namespace Actions
         std::string new_name = std::string(new_path);
         new_name = Util::Rtrim(Util::Trim(new_name, " "), "/");
         std::string path = FS::GetPath(remote_directory, new_name);
-        client->Rename(old_path, path.c_str());
+        remoteclient->Rename(old_path, path.c_str());
         RefreshRemoteFiles(false);
         sprintf(remote_file_to_select, "%s", new_name.c_str());
     }
@@ -252,7 +256,7 @@ namespace Actions
 
     int DeleteSelectedRemotesFilesThread(SceSize args, void *argp)
     {
-        if (client->Ping())
+        if (remoteclient->Ping())
         {
             std::vector<DirEntry> files;
             if (multi_selected_remote_files.size() > 0)
@@ -263,13 +267,13 @@ namespace Actions
             for (std::vector<DirEntry>::iterator it = files.begin(); it != files.end(); ++it)
             {
                 if (it->isDir)
-                    client->Rmdir(it->path, true);
+                    remoteclient->Rmdir(it->path, true);
                 else
                 {
                     sprintf(activity_message, "%s %s\n", lang_strings[STR_DELETING], it->path);
-                    if (!client->Delete(it->path))
+                    if (!remoteclient->Delete(it->path))
                     {
-                        sprintf(status_message, "%s - %s", lang_strings[STR_FAILED], client->LastResponse());
+                        sprintf(status_message, "%s - %s", lang_strings[STR_FAILED], remoteclient->LastResponse());
                     }
                 }
             }
@@ -277,7 +281,7 @@ namespace Actions
         }
         else
         {
-            client->Quit();
+            remoteclient->Quit();
             sprintf(status_message, "%s", lang_strings[STR_CONNECTION_CLOSE_ERR_MSG]);
             Disconnect();
         }
@@ -298,15 +302,15 @@ namespace Actions
     {
         int ret;
         int64_t filesize;
-        ret = client->Ping();
+        ret = remoteclient->Ping();
         if (ret == 0)
         {
-            client->Quit();
+            remoteclient->Quit();
             sprintf(status_message, "%s", lang_strings[STR_CONNECTION_CLOSE_ERR_MSG]);
             return ret;
         }
 
-        if (overwrite_type == OVERWRITE_PROMPT && client->FileExists(dest))
+        if (overwrite_type == OVERWRITE_PROMPT && remoteclient->FileExists(dest))
         {
             sprintf(confirm_message, "%s %s?", lang_strings[STR_OVERWRITE], dest);
             confirm_state = CONFIRM_WAIT;
@@ -319,7 +323,7 @@ namespace Actions
             activity_inprogess = true;
             selected_action = action_to_take;
         }
-        else if (overwrite_type == OVERWRITE_NONE && client->FileExists(dest))
+        else if (overwrite_type == OVERWRITE_NONE && remoteclient->FileExists(dest))
         {
             confirm_state = CONFIRM_NO;
         }
@@ -331,7 +335,7 @@ namespace Actions
         if (confirm_state == CONFIRM_YES)
         {
             sprintf(activity_message, "%s %s\n", lang_strings[STR_UPLOADING], src);
-            return client->Put(src, dest);
+            return remoteclient->Put(src, dest);
         }
 
         return 1;
@@ -347,7 +351,7 @@ namespace Actions
         {
             int err;
             std::vector<DirEntry> entries = FS::ListDir(src.path, &err);
-            client->Mkdir(dest);
+            remoteclient->Mkdir(dest);
             for (int i = 0; i < entries.size(); i++)
             {
                 if (stop_activity)
@@ -362,7 +366,7 @@ namespace Actions
                     if (strcmp(entries[i].name, "..") == 0)
                         continue;
 
-                    client->Mkdir(new_path);
+                    remoteclient->Mkdir(new_path);
                     ret = Upload(entries[i], new_path);
                     if (ret <= 0)
                     {
@@ -448,11 +452,11 @@ namespace Actions
     {
         int ret;
         bytes_transfered = 0;
-        ret = client->Size(src, &bytes_to_download);
+        ret = remoteclient->Size(src, &bytes_to_download);
         debugNetPrintf(DEBUG, "bytes_to_download=%ld\n", bytes_to_download);
         if (ret == 0)
         {
-            client->Quit();
+            remoteclient->Quit();
             sprintf(status_message, "%s", lang_strings[STR_CONNECTION_CLOSE_ERR_MSG]);
             return ret;
         }
@@ -482,7 +486,7 @@ namespace Actions
         if (confirm_state == CONFIRM_YES)
         {
             sprintf(activity_message, "%s %s\n", lang_strings[STR_DOWNLOADING], src);
-            return client->Get(dest, src);
+            return remoteclient->Get(dest, src);
         }
 
         return 1;
@@ -498,7 +502,7 @@ namespace Actions
         {
             int err;
             debugNetPrintf(DEBUG, "Download - before ListDir\n");
-            std::vector<DirEntry> entries = client->ListDir(src.path);
+            std::vector<DirEntry> entries = remoteclient->ListDir(src.path);
             debugNetPrintf(DEBUG, "Download - after ListDir\n");
             FS::MkDirs(dest);
             for (int i = 0; i < entries.size(); i++)
@@ -598,9 +602,9 @@ namespace Actions
         SceUInt64 idle;
         while (true)
         {
-            if (client != nullptr && client->clientType() == CLIENT_TYPE_FTP)
+            if (remoteclient != nullptr && remoteclient->clientType() == CLIENT_TYPE_FTP)
             {
-                FtpClient *ftpclient = (FtpClient*)client;
+                FtpClient *ftpclient = (FtpClient*)remoteclient;
                 idle = ftpclient->GetIdleTime();
                 if (idle > 60000000)
                 {
@@ -622,13 +626,17 @@ namespace Actions
     void Connect()
     {
         CONFIG::SaveConfig();
-        if (strncmp(remote_settings->server, "webdavs://", 10) == 0 || strncmp(remote_settings->server, "webdav://", 9) == 0)
+        if (strncmp(remote_settings->server, GOOGLE_DRIVE_BASE_URL, strlen(GOOGLE_DRIVE_BASE_URL)) == 0)
         {
-            client = new WebDAV::WebDavClient();
+            remoteclient = new GDriveClient();
+        }
+        else if (strncmp(remote_settings->server, "webdavs://", 10) == 0 || strncmp(remote_settings->server, "webdav://", 9) == 0)
+        {
+            remoteclient = new WebDAV::WebDavClient();
         }
         else if (strncmp(remote_settings->server, "smb://", 6) == 0)
         {
-            client = new SmbClient();
+            remoteclient = new SmbClient();
         }
         else if (strncmp(remote_settings->server, "ftp://", 6) == 0)
         {
@@ -636,15 +644,22 @@ namespace Actions
             ftpclient->SetConnmode(FtpClient::pasv);
             ftpclient->SetCallbackBytes(256000);
             ftpclient->SetCallbackXferFunction(FtpCallback);
-            client = ftpclient;
+            remoteclient = ftpclient;
         }
         else if (strncmp(remote_settings->server, "nfs://", 6) == 0)
         {
-            client = new NfsClient();
+            remoteclient = new NfsClient();
         }
         else if (strncmp(remote_settings->server, "http://", 7) == 0 || strncmp(remote_settings->server, "https://", 8) == 0)
         {
-            client = new IISClient();
+            if (strcmp(remote_settings->http_server_type, HTTP_SERVER_APACHE) == 0)
+                remoteclient = new ApacheClient();
+            else if (strcmp(remote_settings->http_server_type, HTTP_SERVER_MS_IIS) == 0)
+                remoteclient = new IISClient();
+            else if (strcmp(remote_settings->http_server_type, HTTP_SERVER_NGINX) == 0)
+                remoteclient = new NginxClient();
+            else if (strcmp(remote_settings->http_server_type, HTTP_SERVER_NPX_SERVE) == 0)
+                remoteclient = new NpxServeClient();
         }
         else
         {
@@ -653,12 +668,12 @@ namespace Actions
             return;
         }
 
-        if (client->Connect(remote_settings->server, remote_settings->username, remote_settings->password))
+        if (remoteclient->Connect(remote_settings->server, remote_settings->username, remote_settings->password))
         {
             RefreshRemoteFiles(false);
-            sprintf(status_message, "%s", client->LastResponse());
+            sprintf(status_message, "%s", remoteclient->LastResponse());
 
-            if (client->clientType() == CLIENT_TYPE_FTP)
+            if (remoteclient->clientType() == CLIENT_TYPE_FTP)
             {
                 ftp_keep_alive_thid = sceKernelCreateThread("ftp_keep_alive_thread", (SceKernelThreadEntry)KeepAliveThread, 0x10000100, 0x4000, 0, 0, NULL);
                 if (ftp_keep_alive_thid >= 0)
@@ -668,11 +683,11 @@ namespace Actions
         else
         {
             sprintf(status_message, "%s", lang_strings[STR_FAIL_TIMEOUT_MSG]);
-            if (client != nullptr)
+            if (remoteclient != nullptr)
             {
-                client->Quit();
-                delete client;
-                client = nullptr;
+                remoteclient->Quit();
+                delete remoteclient;
+                remoteclient = nullptr;
             }
         }
         selected_action = ACTION_NONE;
@@ -680,15 +695,15 @@ namespace Actions
 
     void Disconnect()
     {
-        if (client != nullptr)
+        if (remoteclient != nullptr)
         {
-            client->Quit();
+            remoteclient->Quit();
             multi_selected_remote_files.clear();
             remote_files.clear();
             sprintf(remote_directory, "/");
             sprintf(status_message, "");
         }
-        client = nullptr;
+        remoteclient = nullptr;
     }
 
     void SelectAllLocalFiles()
@@ -918,7 +933,7 @@ namespace Actions
     int CopyOrMoveRemoteFile(const std::string &src, const std::string &dest, bool isCopy)
     {
         int ret;
-        if (overwrite_type == OVERWRITE_PROMPT && client->FileExists(dest))
+        if (overwrite_type == OVERWRITE_PROMPT && remoteclient->FileExists(dest))
         {
             sprintf(confirm_message, "%s %s?", lang_strings[STR_OVERWRITE], dest.c_str());
             confirm_state = CONFIRM_WAIT;
@@ -931,7 +946,7 @@ namespace Actions
             activity_inprogess = true;
             selected_action = action_to_take;
         }
-        else if (overwrite_type == OVERWRITE_NONE && client->FileExists(dest))
+        else if (overwrite_type == OVERWRITE_NONE && remoteclient->FileExists(dest))
         {
             confirm_state = CONFIRM_NO;
         }
@@ -943,9 +958,9 @@ namespace Actions
         if (confirm_state == CONFIRM_YES)
         {
             if (isCopy)
-                return client->Copy(src, dest);
+                return remoteclient->Copy(src, dest);
             else
-                return client->Move(src, dest);
+                return remoteclient->Move(src, dest);
         }
 
         return 1;
@@ -1010,8 +1025,8 @@ namespace Actions
         if (src.isDir)
         {
             int err;
-            std::vector<DirEntry> entries = client->ListDir(src.path);
-            client->Mkdir(dest);
+            std::vector<DirEntry> entries = remoteclient->ListDir(src.path);
+            remoteclient->Mkdir(dest);
             for (int i = 0; i < entries.size(); i++)
             {
                 if (stop_activity)
@@ -1026,7 +1041,7 @@ namespace Actions
                     if (strcmp(entries[i].name, "..") == 0)
                         continue;
 
-                    client->Mkdir(new_path);
+                    remoteclient->Mkdir(new_path);
                     ret = CopyRemotePath(entries[i], new_path);
                     if (ret <= 0)
                     {
@@ -1147,7 +1162,7 @@ namespace Actions
         int i = 1;
         while (true)
         {
-            if (!client->FileExists(temp_file))
+            if (!remoteclient->FileExists(temp_file))
                 break;
             temp_file = new_file + "." + std::to_string(i);
             i++;
@@ -1158,7 +1173,7 @@ namespace Actions
         std::string local_tmp = std::string(DATA_PATH) + "/" + std::to_string(tick.tick);
         FILE *f = FS::Create(local_tmp);
         FS::Close(f);
-        client->Put(local_tmp, temp_file);
+        remoteclient->Put(local_tmp, temp_file);
         FS::Rm(local_tmp);
         RefreshRemoteFiles(false);
         sprintf(remote_file_to_select, "%s", temp_file.c_str());

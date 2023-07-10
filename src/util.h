@@ -103,5 +103,19 @@ namespace Util
         return tokens;
     }
 
+    static inline time_t getEpochTime()
+    {
+        SceDateTime dt;
+        sceRtcGetCurrentClockUtc(&dt);
+        struct tm t = {0};  // Initalize to all 0's
+        t.tm_year = dt.year - 1900;
+        t.tm_mon = dt.month - 1;
+        t.tm_mday = dt.day;
+        t.tm_hour = dt.hour;
+        t.tm_min = dt.minute;
+        t.tm_sec = dt.second;
+        time_t timeSinceEpoch = mktime(&t);
+        return timeSinceEpoch;
+    }
 }
 #endif

@@ -17,7 +17,7 @@ bool swap_xo;
 std::vector<std::string> bg_music_list;
 bool enable_backgrou_music;
 RemoteSettings *remote_settings;
-RemoteClient *client;
+RemoteClient *remoteclient;
 char local_directory[MAX_PATH_LENGTH];
 char remote_directory[MAX_PATH_LENGTH];
 char app_ver[6];
@@ -28,6 +28,7 @@ std::vector<std::string> sites;
 std::vector<std::string> http_servers;
 std::map<std::string, RemoteSettings> site_settings;
 bool warn_missing_installs;
+GoogleAppInfo gg_app;
 bool show_hidden_files;
 
 namespace CONFIG
@@ -80,14 +81,8 @@ namespace CONFIG
             sprintf(setting.password, "%s", ReadString(sites[i].c_str(), CONFIG_REMOTE_SERVER_PASSWORD, ""));
             WriteString(sites[i].c_str(), CONFIG_REMOTE_SERVER_PASSWORD, setting.password);
 
-            setting.gg_account.token_expiry = ReadLong(sites[i].c_str(), CONFIG_GOOGLE_TOKEN_EXPIRY, 0);
-            WriteLong(sites[i].c_str(), CONFIG_GOOGLE_TOKEN_EXPIRY, setting.gg_account.token_expiry);
-
-            sprintf(setting.gg_account.access_token, "%s", ReadString(sites[i].c_str(), CONFIG_GOOGLE_ACCESS_TOKEN, ""));
-            WriteString(sites[i].c_str(), CONFIG_GOOGLE_ACCESS_TOKEN, setting.gg_account.access_token);
-
-            sprintf(setting.gg_account.refresh_token, "%s", ReadString(sites[i].c_str(), CONFIG_GOOGLE_REFRESH_TOKEN, ""));
-            WriteString(sites[i].c_str(), CONFIG_GOOGLE_REFRESH_TOKEN, setting.gg_account.refresh_token);
+            sprintf(setting.http_server_type, "%s", ReadString(sites[i].c_str(), CONFIG_REMOTE_HTTP_SERVER_TYPE, HTTP_SERVER_APACHE));
+            WriteString(sites[i].c_str(), CONFIG_REMOTE_HTTP_SERVER_TYPE, setting.http_server_type);
 
             SetClientType(&setting);
             site_settings.insert(std::make_pair(sites[i], setting));
@@ -116,6 +111,7 @@ namespace CONFIG
         WriteString(last_site, CONFIG_REMOTE_SERVER, remote_settings->server);
         WriteString(last_site, CONFIG_REMOTE_SERVER_USER, remote_settings->username);
         WriteString(last_site, CONFIG_REMOTE_SERVER_PASSWORD, remote_settings->password);
+        WriteString(last_site, CONFIG_REMOTE_HTTP_SERVER_TYPE, remote_settings->http_server_type);
         WriteString(CONFIG_GLOBAL, CONFIG_LAST_SITE, last_site);
         WriteIniFile(CONFIG_INI_FILE);
         CloseIniFile();

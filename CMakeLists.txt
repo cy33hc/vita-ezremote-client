@@ -15,8 +15,8 @@ set(VITA_APP_NAME "ezRemote Client")
 set(VITA_TITLEID  "RMTCLI001")
 set(VITA_VERSION  "01.00")
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fpermissive -fno-PIC -fno-PIE")
-set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fno-PIC -fno-PIE")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fpermissive")
+set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS}")
 
 add_definitions(-DCPPHTTPLIB_OPENSSL_SUPPORT)
 
@@ -28,6 +28,7 @@ add_executable(${PROJECT_NAME}
   src/clients/baseclient.cpp
   src/clients/iis.cpp
   src/clients/apache.cpp
+  src/clients/gdrive.cpp
   src/clients/nginx.cpp
   src/clients/npxserve.cpp
   src/clients/ftpclient.cpp
@@ -69,6 +70,7 @@ target_link_libraries(${PROJECT_NAME}
   debugnet
   lexbor
   lexbor_static
+  json-c
   imgui
   vita2d
   vitaGL
