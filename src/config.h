@@ -49,6 +49,14 @@
 #define HTTP_SERVER_NGINX "Nginx"
 #define HTTP_SERVER_NPX_SERVE "Serve"
 
+#define CONFIG_GOOGLE "Google"
+#define CONFIG_GOOGLE_CLIENT_ID "google_client_id"
+#define CONFIG_GOOGLE_CLIENT_SECRET "google_client_secret"
+#define CONFIG_GOOGLE_PERMISSIONS "google_client_permissions"
+#define CONFIG_GOOGLE_ACCESS_TOKEN "google_access_token"
+#define CONFIG_GOOGLE_REFRESH_TOKEN "google_refresh_token"
+#define CONFIG_GOOGLE_TOKEN_EXPIRY "google_token_expiry"
+
 #define GOOGLE_OAUTH_HOST "https://oauth2.googleapis.com"
 #define GOOGLE_AUTH_URL "https://oauth2.googleapis.com/device/code"
 #define GOOGLE_API_URL "https://www.googleapis.com"
@@ -72,7 +80,7 @@ struct GoogleAccountInfo
 struct GoogleAppInfo
 {
     char client_id[140];
-    char client_secret[64];
+    char client_secret[128];
     char permissions[92];
 };
 

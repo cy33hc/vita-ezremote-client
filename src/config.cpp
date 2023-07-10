@@ -67,6 +67,15 @@ namespace CONFIG
         show_hidden_files = ReadBool(CONFIG_GLOBAL, CONFIG_SHOW_HIDDEN_FILES, false);
         WriteBool(CONFIG_GLOBAL, CONFIG_SHOW_HIDDEN_FILES, show_hidden_files);
 
+        sprintf(gg_app.client_id, "%s", ReadString(CONFIG_GOOGLE, CONFIG_GOOGLE_CLIENT_ID, ""));
+        WriteString(CONFIG_GOOGLE, CONFIG_GOOGLE_CLIENT_ID, gg_app.client_id);
+
+        sprintf(gg_app.client_secret, "%s", ReadString(CONFIG_GOOGLE, CONFIG_GOOGLE_CLIENT_SECRET, ""));
+        WriteString(CONFIG_GOOGLE, CONFIG_GOOGLE_CLIENT_SECRET, gg_app.client_secret);
+
+        sprintf(gg_app.permissions, "%s", ReadString(CONFIG_GOOGLE, CONFIG_GOOGLE_PERMISSIONS, GOOGLE_DEFAULT_PERMISSIONS));
+        WriteString(CONFIG_GOOGLE, CONFIG_GOOGLE_PERMISSIONS, gg_app.permissions);
+
         for (int i = 0; i < sites.size(); i++)
         {
             RemoteSettings setting;
@@ -83,6 +92,18 @@ namespace CONFIG
 
             sprintf(setting.http_server_type, "%s", ReadString(sites[i].c_str(), CONFIG_REMOTE_HTTP_SERVER_TYPE, HTTP_SERVER_APACHE));
             WriteString(sites[i].c_str(), CONFIG_REMOTE_HTTP_SERVER_TYPE, setting.http_server_type);
+
+            // Token Expiry
+            setting.gg_account.token_expiry = ReadLong(sites[i].c_str(), CONFIG_GOOGLE_TOKEN_EXPIRY, 0);
+            WriteLong(sites[i].c_str(), CONFIG_GOOGLE_TOKEN_EXPIRY, setting.gg_account.token_expiry);
+
+            // Access Token
+            sprintf(setting.gg_account.access_token, "%s", ReadString(sites[i].c_str(), CONFIG_GOOGLE_ACCESS_TOKEN, ""));
+            WriteString(sites[i].c_str(), CONFIG_GOOGLE_ACCESS_TOKEN, setting.gg_account.access_token);
+
+            // Refresh Token
+            sprintf(setting.gg_account.refresh_token, "%s", ReadString(sites[i].c_str(), CONFIG_GOOGLE_REFRESH_TOKEN, ""));
+            WriteString(sites[i].c_str(), CONFIG_GOOGLE_REFRESH_TOKEN, setting.gg_account.refresh_token);
 
             SetClientType(&setting);
             site_settings.insert(std::make_pair(sites[i], setting));
@@ -112,6 +133,9 @@ namespace CONFIG
         WriteString(last_site, CONFIG_REMOTE_SERVER_USER, remote_settings->username);
         WriteString(last_site, CONFIG_REMOTE_SERVER_PASSWORD, remote_settings->password);
         WriteString(last_site, CONFIG_REMOTE_HTTP_SERVER_TYPE, remote_settings->http_server_type);
+        WriteString(last_site, CONFIG_GOOGLE_ACCESS_TOKEN, remote_settings->gg_account.access_token);
+        WriteString(last_site, CONFIG_GOOGLE_REFRESH_TOKEN, remote_settings->gg_account.refresh_token);
+        WriteLong(last_site, CONFIG_GOOGLE_TOKEN_EXPIRY, remote_settings->gg_account.token_expiry);
         WriteString(CONFIG_GLOBAL, CONFIG_LAST_SITE, last_site);
         WriteIniFile(CONFIG_INI_FILE);
         CloseIniFile();

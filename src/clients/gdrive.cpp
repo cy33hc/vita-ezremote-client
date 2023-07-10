@@ -1,99 +1,52 @@
-#include <psp2/rtc.h>
-#include <openssl/bio.h>
-#include <openssl/rsa.h>
-#include <openssl/pem.h>
 #include <lexbor/html/parser.h>
 #include <lexbor/dom/interfaces/element.h>
 #include <json-c/json.h>
-#include "base64.h"
 #include "config.h"
 #include "common.h"
 #include "clients/remote_client.h"
-#include "clients/baseclient.h"
 #include "clients/gdrive.h"
 #include "fs.h"
 #include "lang.h"
 #include "util.h"
 #include "windows.h"
+#include "base64.h"
+#include "debugnet.h"
 
 #define GOOGLE_BUF_SIZE 262144
 
 static std::string shared_with_me("Shared with me");
 static std::string my_drive("My Drive");
-static int http_server_port = 8080;
 
 using namespace httplib;
 
-std::string GetRedirectUrl()
+std::string GetScopes()
 {
-    return std::string("https://localhost:" + std::to_string(http_server_port) + "/google_auth");
+    std::vector<std::string> permissions = Util::Split(gg_app.permissions, ",");
+    std::string scopes;
+    for (int i = 0; i < permissions.size(); i++)
+    {
+        scopes.append("https://www.googleapis.com/auth/");
+        scopes.append(permissions[i]);
+        if (i < permissions.size() - 1)
+        {
+            scopes.append(" ");
+        }
+    }
+    return scopes;
 }
 
-std::string GetValue(const std::map<std::string, std::string> &options, const std::string &name)
+int RefreshAccessToken()
 {
-    auto it = options.find(name);
-    if (it == options.end())
-    {
-        return std::string{""};
-    }
-    else
-    {
-        return it->second;
-    }
-}
-
-int RequestAuthorization()
-{
-    if (!FS::FileExists(GOOGLE_SERVICE_ACCOUNT_PATH)) return 0;
-
-    const auto account_data = FS::Load(GOOGLE_SERVICE_ACCOUNT_PATH);
-    json_object *jobj = json_tokener_parse(account_data.data());
-    const char *iss = json_object_get_string(json_object_object_get(jobj, "client_email"));
-    const char *private_key = json_object_get_string(json_object_object_get(jobj, "private_key"));
-
-    std::string encoded_jwt_header;
-    Base64::Encode("{\"alg\":\"RS256\",\"typ\":\"JWT\"}", encoded_jwt_header);
-    Util::ReplaceAll(encoded_jwt_header, "+", "-");
-    Util::ReplaceAll(encoded_jwt_header, "/", "_");
-    Util::ReplaceAll(encoded_jwt_header, "=", "");
-
-    time_t iat = Util::getEpochTime();
-    time_t exp = iat + 3600;
-    std::string encoded_jwt_claim_set;
-    std::string jwt_claim_set = std::string("{\"iss\":\"") + std::string(iss) + 
-            "\",\"scope\":\"https://www.googleapis.com/auth/drive\",\"aud\":\"https://oauth2.googleapis.com/token\",\"iat\":" + 
-            std::to_string(iat) + ",\"exp\":" + std::to_string(exp) + "}";
-    Base64::Encode(jwt_claim_set, encoded_jwt_claim_set);
-    Util::ReplaceAll(encoded_jwt_claim_set, "+", "-");
-    Util::ReplaceAll(encoded_jwt_claim_set, "/", "_");
-    Util::ReplaceAll(encoded_jwt_claim_set, "=", "");
-    std::string jwt = encoded_jwt_header + "." + encoded_jwt_claim_set;
-
-    BIO *bio = BIO_new_mem_buf(private_key, strlen(private_key));
-    EVP_PKEY* pkey = PEM_read_bio_PrivateKey(bio, nullptr, nullptr, nullptr);
-    unsigned int buffer_size = EVP_PKEY_size(pkey);
-    std::unique_ptr<char[]> buffer(new char[buffer_size]);
-
-    std::unique_ptr<EVP_MD_CTX, void(*)(EVP_MD_CTX*)> ctx(EVP_MD_CTX_new(), &EVP_MD_CTX_free);
-    EVP_SignInit(ctx.get(), EVP_sha256());
-    EVP_SignUpdate(ctx.get(), jwt.c_str(), jwt.size());
-
-    int rc = EVP_SignFinal(ctx.get(), reinterpret_cast<unsigned char*>(buffer.get()), &buffer_size, pkey);
-
-    std::string encoded_sig;
-    Base64::Encode(std::string(buffer.get(), (size_t)buffer_size), encoded_sig);
-    Util::ReplaceAll(encoded_sig, "+", "-");
-    Util::ReplaceAll(encoded_sig, "/", "_");
-    Util::ReplaceAll(encoded_sig, "=", "");
-    jwt = jwt + "." + encoded_sig;
-
-    Client ggclient(GOOGLE_OAUTH_HOST);
-    ggclient.enable_server_certificate_verification(false);
-    ggclient.set_follow_location(true);
+    Client client(GOOGLE_OAUTH_HOST);
+    client.enable_server_certificate_verification(false);
+    client.set_follow_location(true);
     std::string url = std::string("/token");
-    std::string post_data = std::string("grant_type=") + BaseClient::EncodeUrl("urn:ietf:params:oauth:grant-type:jwt-bearer") +
-                            "&assertion=" + jwt;
-    if (auto res = ggclient.Post(url, post_data.c_str(), post_data.length(), "application/x-www-form-urlencoded"))
+    std::string post_data = std::string("grant_type=refresh_token") +
+                            "&client_id=" + gg_app.client_id +
+                            "&client_secret=" + gg_app.client_secret +
+                            "&refresh_token=" + remote_settings->gg_account.refresh_token;
+
+    if (auto res = client.Post(url, post_data.c_str(), post_data.length(), "application/x-www-form-urlencoded"))
     {
         if (HTTP_SUCCESS(res->status))
         {
@@ -115,6 +68,7 @@ int RequestAuthorization()
                 GDriveClient *_client = (GDriveClient *)remoteclient;
                 _client->SetAccessToken(remote_settings->gg_account.access_token);
             }
+            CONFIG::SaveConfig();
         }
         else
         {
@@ -125,8 +79,126 @@ int RequestAuthorization()
     {
         return 0;
     }
-
     return 1;
+}
+
+int login_state;
+
+std::string GetValue(const std::map<std::string, std::string> &options, const std::string &name)
+{
+    auto it = options.find(name);
+    if (it == options.end())
+    {
+        return std::string{""};
+    }
+    else
+    {
+        return it->second;
+    }
+}
+
+int GDriveClient::RequestAuthorization()
+{
+    Client client(GOOGLE_OAUTH_HOST);
+    client.enable_server_certificate_verification(false);
+    client.set_follow_location(true);
+    std::string url = std::string("/device/code");
+    std::string post_data = std::string("client_id=") + gg_app.client_id + "&scope=" + BaseClient::EncodeUrl(GetScopes());
+    debugNetPrintf(DEBUG, "post_data=%s\n", post_data.c_str());
+
+    char device_code[256];
+    char user_code[16];
+    char verification_url[128];
+    uint64_t expires_in;
+    uint64_t interval;
+    SceRtcTick start_tick, curr_tick;
+    sceRtcGetCurrentTick(&start_tick);
+
+    if (auto res = client.Post(url, post_data.c_str(), post_data.length(), "application/x-www-form-urlencoded"))
+    {
+        if (HTTP_SUCCESS(res->status))
+        {
+            json_object *jobj = json_tokener_parse(res->body.c_str());
+            enum json_type type;
+            json_object_object_foreach(jobj, key, val)
+            {
+                if (strcmp(key, "device_code") == 0)
+                    snprintf(device_code, 255, "%s", json_object_get_string(val));
+                else if (strcmp(key, "user_code") == 0)
+                    snprintf(user_code, 16, "%s", json_object_get_string(val));
+                else if (strcmp(key, "verification_url") == 0)
+                    snprintf(verification_url, 127, "%s", json_object_get_string(val));
+                else if (strcmp(key, "expires_in") == 0)
+                {
+                    SceRtcTick tick;
+                    sceRtcGetCurrentTick(&tick);
+                    expires_in = tick.tick + (json_object_get_uint64(val) * 1000000);
+                }
+                else if (strcmp(key, "interval") == 0)
+                    interval = json_object_get_uint64(val);
+            }
+        }
+        else
+        {
+            debugNetPrintf(DEBUG, "status=%d, body=%s\n", res->status, res->body.c_str());
+            return 0;
+        }
+    }
+    else
+    {
+        return 0;
+    }
+
+    debugNetPrintf(DEBUG, "device_code=%s, user_code=%s, verification_url=%s\n", device_code, user_code, verification_url);
+    sceRtcGetCurrentTick(&curr_tick);
+    login_state = 0;
+    while (curr_tick.tick < expires_in)
+    {
+        std::string url = std::string("/token");
+        std::string post_data = std::string("grant_type=") + BaseClient::EncodeUrl("urn:ietf:params:oauth:grant-type:device_code") +
+                                "&client_id=" + gg_app.client_id +
+                                "&client_secret=" + gg_app.client_secret +
+                                "&device_code=" + device_code;
+        debugNetPrintf(DEBUG, "post_data=%s\n", post_data.c_str());
+
+        if (auto res = client.Post(url, post_data.c_str(), post_data.length(), "application/x-www-form-urlencoded"))
+        {
+            if (HTTP_SUCCESS(res->status))
+            {
+                json_object *jobj = json_tokener_parse(res->body.c_str());
+                enum json_type type;
+                json_object_object_foreach(jobj, key, val)
+                {
+                    if (strcmp(key, "access_token") == 0)
+                        snprintf(remote_settings->gg_account.access_token, 255, "%s", json_object_get_string(val));
+                    else if (strcmp(key, "refresh_token") == 0)
+                        snprintf(remote_settings->gg_account.refresh_token, 255, "%s", json_object_get_string(val));
+                    else if (strcmp(key, "expires_in") == 0)
+                    {
+                        SceRtcTick tick;
+                        sceRtcGetCurrentTick(&tick);
+                        remote_settings->gg_account.token_expiry = tick.tick + (json_object_get_uint64(val) * 1000000);
+                    }
+                }
+                CONFIG::SaveConfig();
+                login_state = 1;
+                break;
+            }
+            else if (res->status = 428)
+            {
+                debugNetPrintf(DEBUG, "Waiting status=%d\n", res->status);
+                sceKernelDelayThread(interval * 1000000);
+                sceRtcGetCurrentTick(&curr_tick);
+            }
+            else
+            {
+                debugNetPrintf(DEBUG, "Error status=%d\n", res->status);
+                return 0;
+            }
+        }
+    }
+
+    return login_state;
 }
 
 std::string GDriveClient::GetDriveId(const std::string path)
@@ -146,14 +218,25 @@ GDriveClient::GDriveClient()
 
 int GDriveClient::Connect(const std::string &url, const std::string &user, const std::string &pass)
 {
-    RequestAuthorization();
+    if (strlen(remote_settings->gg_account.refresh_token) > 0)
+    {
+        int ret = RefreshAccessToken();
+        if (ret == 0)
+        {
+            RequestAuthorization();
+        }
+    }
+    else
+    {
+        RequestAuthorization();
+    }
     StartRefreshToken();
 
     client = new Client(GOOGLE_API_URL);
     client->set_bearer_token_auth(remote_settings->gg_account.access_token);
     client->set_follow_location(true);
-    client->set_connection_timeout(10, 10000000);
-    client->set_read_timeout(10, 10000000);
+    client->set_connection_timeout(30);
+    client->set_read_timeout(30);
     client->enable_server_certificate_verification(false);
     this->connected = true;
 
@@ -704,6 +787,8 @@ std::vector<DirEntry> GDriveClient::ListDir(const std::string &path)
                     }
                 }
             }
+            else
+                debugNetPrintf(DEBUG, "ListDir status=%d\n", res->status);
         }
 
         return out;
@@ -844,7 +929,7 @@ void *GDriveClient::RefreshTokenThread(void *argp)
         if (tick.tick >= (remote_settings->gg_account.token_expiry - 300000000) &&
             remote_settings->type == CLIENT_TYPE_GOOGLE) // refresh token 5mins before expiry
         {
-            RequestAuthorization();
+            RefreshAccessToken();
         }
         sceKernelDelayThread(500000); // check every 0.5s
     }

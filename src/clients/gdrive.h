@@ -38,6 +38,7 @@ public:
     int Quit();
 
 private:
+    int RequestAuthorization();
     std::string GetDriveId(const std::string path);
     std::map<std::string, std::string> path_id_map;
     std::map<std::string, std::string> shared_drive_map;
