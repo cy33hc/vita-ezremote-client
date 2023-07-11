@@ -68,7 +68,7 @@
 
 struct ENTRY *Entry = NULL;
 struct ENTRY *CurEntry = NULL;
-char Result[4096] =
+char Result[512] =
 {""};
 FILE *IniFile;
 
@@ -114,7 +114,7 @@ void strupr( char *str )
 bool 
 OpenIniFile (cchr * FileName)
 {
-	char Str[5120];
+	char Str[512];
 	char *pStr;
 	struct ENTRY *pEntry;
 
@@ -129,7 +129,7 @@ OpenIniFile (cchr * FileName)
 	return FALSE;
 	}
 
-	while (fgets (Str, 5120, IniFile) != NULL)
+	while (fgets (Str, 512, IniFile) != NULL)
 	{
 		pStr = strchr (Str, '\n');
 		if (pStr != NULL)
@@ -248,7 +248,7 @@ void
 WriteString (cchr * Section, cchr * pKey, cchr * Value)
 {
 	EFIND List;
-	char Str[5120];
+	char Str[512];
 
 	if (ArePtrValid (Section, pKey, Value) == FALSE)
 	{
@@ -500,7 +500,7 @@ FindpKey (cchr * Section, cchr * pKey, EFIND * List)
 {
 	char Search[130];
 	char Found[130];
-	char Text[5120];
+	char Text[512];
 	char *pText;
 	struct ENTRY *pEntry;
 	List->pSec = NULL;
@@ -635,7 +635,7 @@ AddItemAt (struct ENTRY * EntryAt, char Mode, cchr * Text)
 bool 
 AddSectionAndpKey (cchr * Section, cchr * pKey, cchr * Value)
 {
-	char Text[5120];
+	char Text[512];
 	sprintf (Text, "[%s]", Section);
 	if (AddItem (tpSECTION, Text) == FALSE)
     {
@@ -651,7 +651,7 @@ AddSectionAndpKey (cchr * Section, cchr * pKey, cchr * Value)
 void 
 AddpKey (struct ENTRY *SecEntry, cchr * pKey, cchr * Value)
 {
-	char Text[5120];
+	char Text[512];
 	sprintf (Text, "%s=%s", pKey, Value);
 	AddItemAt (SecEntry, tpKEYVALUE, Text);
 }

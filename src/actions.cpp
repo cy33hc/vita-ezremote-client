@@ -5,7 +5,6 @@
 #include "clients/iis.h"
 #include "clients/nginx.h"
 #include "clients/npxserve.h"
-#include "clients/gdrive.h"
 #include "clients/smbclient.h"
 #include "clients/ftpclient.h"
 #include "clients/nfsclient.h"
@@ -51,7 +50,7 @@ namespace Actions
         }
         DirEntry::Sort(local_files);
         if (err != 0)
-            sprintf(status_message, "%s", lang_strings[STR_FAIL_READ_LOCAL_DIR_MSG]);
+            snprintf(status_message, 1023, "%s", lang_strings[STR_FAIL_READ_LOCAL_DIR_MSG]);
     }
 
     void RefreshRemoteFiles(bool apply_filter)
@@ -59,7 +58,7 @@ namespace Actions
         if (!remoteclient->Ping())
         {
             remoteclient->Quit();
-            sprintf(status_message, "%s", lang_strings[STR_CONNECTION_CLOSE_ERR_MSG]);
+            snprintf(status_message, 1023, "%s", lang_strings[STR_CONNECTION_CLOSE_ERR_MSG]);
             return;
         }
 
@@ -85,7 +84,7 @@ namespace Actions
             remote_files = remoteclient->ListDir(remote_directory);
         }
         DirEntry::Sort(remote_files);
-        sprintf(status_message, "%s", remoteclient->LastResponse());
+        snprintf(status_message, 1023, "%s", remoteclient->LastResponse());
     }
 
     void HandleChangeLocalDirectory(const DirEntry entry)
@@ -119,7 +118,7 @@ namespace Actions
         if (!remoteclient->Ping())
         {
             remoteclient->Quit();
-            sprintf(status_message, "%s", lang_strings[STR_CONNECTION_CLOSE_ERR_MSG]);
+            snprintf(status_message, 1023, "%s", lang_strings[STR_CONNECTION_CLOSE_ERR_MSG]);
             return;
         }
 
@@ -180,7 +179,7 @@ namespace Actions
 
     void CreateNewLocalFolder(char *new_folder)
     {
-        sprintf(status_message, "%s", "");
+        snprintf(status_message, 1023, "%s", "");
         std::string folder = std::string(new_folder);
         folder = Util::Rtrim(Util::Trim(folder, " "), "/");
         std::string path = FS::GetPath(local_directory, folder);
@@ -191,7 +190,7 @@ namespace Actions
 
     void CreateNewRemoteFolder(char *new_folder)
     {
-        sprintf(status_message, "%s", "");
+        snprintf(status_message, 1023, "%s", "");
         std::string folder = std::string(new_folder);
         folder = Util::Rtrim(Util::Trim(folder, " "), "/");
         std::string path = remoteclient->GetPath(remote_directory, folder);
@@ -202,13 +201,13 @@ namespace Actions
         }
         else
         {
-            sprintf(status_message, "%s - %s", lang_strings[STR_FAILED], remoteclient->LastResponse());
+            snprintf(status_message, 1023, "%s - %s", lang_strings[STR_FAILED], remoteclient->LastResponse());
         }
     }
 
     void RenameLocalFolder(char *old_path, char *new_path)
     {
-        sprintf(status_message, "%s", "");
+        snprintf(status_message, 1023, "%s", "");
         std::string new_name = std::string(new_path);
         new_name = Util::Rtrim(Util::Trim(new_name, " "), "/");
         std::string path = FS::GetPath(local_directory, new_name);
@@ -219,7 +218,7 @@ namespace Actions
 
     void RenameRemoteFolder(char *old_path, char *new_path)
     {
-        sprintf(status_message, "%s", "");
+        snprintf(status_message, 1023, "%s", "");
         std::string new_name = std::string(new_path);
         new_name = Util::Rtrim(Util::Trim(new_name, " "), "/");
         std::string path = FS::GetPath(remote_directory, new_name);
@@ -273,7 +272,7 @@ namespace Actions
                     sprintf(activity_message, "%s %s\n", lang_strings[STR_DELETING], it->path);
                     if (!remoteclient->Delete(it->path))
                     {
-                        sprintf(status_message, "%s - %s", lang_strings[STR_FAILED], remoteclient->LastResponse());
+                        snprintf(status_message, 1023, "%s - %s", lang_strings[STR_FAILED], remoteclient->LastResponse());
                     }
                 }
             }
@@ -282,7 +281,7 @@ namespace Actions
         else
         {
             remoteclient->Quit();
-            sprintf(status_message, "%s", lang_strings[STR_CONNECTION_CLOSE_ERR_MSG]);
+            snprintf(status_message, 1023, "%s", lang_strings[STR_CONNECTION_CLOSE_ERR_MSG]);
             Disconnect();
         }
         activity_inprogess = false;
@@ -306,7 +305,7 @@ namespace Actions
         if (ret == 0)
         {
             remoteclient->Quit();
-            sprintf(status_message, "%s", lang_strings[STR_CONNECTION_CLOSE_ERR_MSG]);
+            snprintf(status_message, 1023, "%s", lang_strings[STR_CONNECTION_CLOSE_ERR_MSG]);
             return ret;
         }
 
@@ -382,7 +381,7 @@ namespace Actions
                     ret = UploadFile(entries[i].path, new_path);
                     if (ret <= 0)
                     {
-                        sprintf(status_message, "%s %s", lang_strings[STR_FAIL_UPLOAD_MSG], entries[i].path);
+                        snprintf(status_message, 1023, "%s %s", lang_strings[STR_FAIL_UPLOAD_MSG], entries[i].path);
                         free(new_path);
                         return ret;
                     }
@@ -402,7 +401,7 @@ namespace Actions
             if (ret <= 0)
             {
                 free(new_path);
-                sprintf(status_message, "%s %s", lang_strings[STR_FAIL_UPLOAD_MSG], src.name);
+                snprintf(status_message, 1023, "%s %s", lang_strings[STR_FAIL_UPLOAD_MSG], src.name);
                 return 0;
             }
             free(new_path);
@@ -453,11 +452,10 @@ namespace Actions
         int ret;
         bytes_transfered = 0;
         ret = remoteclient->Size(src, &bytes_to_download);
-        debugNetPrintf(DEBUG, "bytes_to_download=%ld\n", bytes_to_download);
         if (ret == 0)
         {
             remoteclient->Quit();
-            sprintf(status_message, "%s", lang_strings[STR_CONNECTION_CLOSE_ERR_MSG]);
+            snprintf(status_message, 1023, "%s", lang_strings[STR_CONNECTION_CLOSE_ERR_MSG]);
             return ret;
         }
 
@@ -501,9 +499,7 @@ namespace Actions
         if (src.isDir)
         {
             int err;
-            debugNetPrintf(DEBUG, "Download - before ListDir\n");
             std::vector<DirEntry> entries = remoteclient->ListDir(src.path);
-            debugNetPrintf(DEBUG, "Download - after ListDir\n");
             FS::MkDirs(dest);
             for (int i = 0; i < entries.size(); i++)
             {
@@ -533,7 +529,7 @@ namespace Actions
                     ret = DownloadFile(entries[i].path, new_path);
                     if (ret <= 0)
                     {
-                        sprintf(status_message, "%s %s", lang_strings[STR_FAIL_DOWNLOAD_MSG], entries[i].path);
+                        snprintf(status_message, 1023, "%s %s", lang_strings[STR_FAIL_DOWNLOAD_MSG], entries[i].path);
                         free(new_path);
                         return ret;
                     }
@@ -551,7 +547,7 @@ namespace Actions
             if (ret <= 0)
             {
                 free(new_path);
-                sprintf(status_message, "%s %s", lang_strings[STR_FAIL_DOWNLOAD_MSG], src.path);
+                snprintf(status_message, 1023, "%s %s", lang_strings[STR_FAIL_DOWNLOAD_MSG], src.path);
                 return 0;
             }
             free(new_path);
@@ -611,7 +607,7 @@ namespace Actions
                     if (!ftpclient->Noop())
                     {
                         ftpclient->Quit();
-                        sprintf(status_message, lang_strings[STR_REMOTE_TERM_CONN_MSG]);
+                        snprintf(status_message, 1023, lang_strings[STR_REMOTE_TERM_CONN_MSG]);
                         sceKernelExitDeleteThread(0);
                     }
                 }
@@ -620,17 +616,13 @@ namespace Actions
             else
                 sceKernelExitDeleteThread(0);
         }
-        sceKernelExitDeleteThread(0);
+        return sceKernelExitDeleteThread(0);
     }
 
     void Connect()
     {
         CONFIG::SaveConfig();
-        if (strncmp(remote_settings->server, GOOGLE_DRIVE_BASE_URL, strlen(GOOGLE_DRIVE_BASE_URL)) == 0)
-        {
-            remoteclient = new GDriveClient();
-        }
-        else if (strncmp(remote_settings->server, "webdavs://", 10) == 0 || strncmp(remote_settings->server, "webdav://", 9) == 0)
+        if (strncmp(remote_settings->server, "webdavs://", 10) == 0 || strncmp(remote_settings->server, "webdav://", 9) == 0)
         {
             remoteclient = new WebDAV::WebDavClient();
         }
@@ -663,7 +655,7 @@ namespace Actions
         }
         else
         {
-            sprintf(status_message, "%s", lang_strings[STR_PROTOCOL_NOT_SUPPORTED]);
+            snprintf(status_message, 1023, "%s", lang_strings[STR_PROTOCOL_NOT_SUPPORTED]);
             selected_action = ACTION_NONE;
             return;
         }
@@ -671,7 +663,7 @@ namespace Actions
         if (remoteclient->Connect(remote_settings->server, remote_settings->username, remote_settings->password))
         {
             RefreshRemoteFiles(false);
-            sprintf(status_message, "%s", remoteclient->LastResponse());
+            snprintf(status_message, 1023, "%s", remoteclient->LastResponse());
 
             if (remoteclient->clientType() == CLIENT_TYPE_FTP)
             {
@@ -682,7 +674,7 @@ namespace Actions
         }
         else
         {
-            sprintf(status_message, "%s", lang_strings[STR_FAIL_TIMEOUT_MSG]);
+            snprintf(status_message, 1023, "%s", lang_strings[STR_FAIL_TIMEOUT_MSG]);
             if (remoteclient != nullptr)
             {
                 remoteclient->Quit();
@@ -701,7 +693,7 @@ namespace Actions
             multi_selected_remote_files.clear();
             remote_files.clear();
             sprintf(remote_directory, "/");
-            sprintf(status_message, "");
+            snprintf(status_message, 1023, "");
         }
         remoteclient = nullptr;
     }
@@ -801,7 +793,7 @@ namespace Actions
                     ret = CopyOrMoveLocalFile(entries[i].path, new_path, isCopy);
                     if (ret <= 0)
                     {
-                        sprintf(status_message, "%s %s", isCopy ? lang_strings[STR_FAIL_COPY_MSG] : lang_strings[STR_FAIL_MOVE_MSG], entries[i].path);
+                        snprintf(status_message, 1023, "%s %s", isCopy ? lang_strings[STR_FAIL_COPY_MSG] : lang_strings[STR_FAIL_MOVE_MSG], entries[i].path);
                         free(new_path);
                         return ret;
                     }
@@ -820,7 +812,7 @@ namespace Actions
             if (ret <= 0)
             {
                 free(new_path);
-                sprintf(status_message, "%s %s", isCopy ? lang_strings[STR_FAIL_COPY_MSG] : lang_strings[STR_FAIL_MOVE_MSG], src.name);
+                snprintf(status_message, 1023, "%s %s", isCopy ? lang_strings[STR_FAIL_COPY_MSG] : lang_strings[STR_FAIL_MOVE_MSG], src.name);
                 return 0;
             }
             free(new_path);
@@ -843,7 +835,7 @@ namespace Actions
             {
                 if (strncmp(local_directory, it->path, strlen(it->path)) == 0)
                 {
-                    sprintf(status_message, "%s", lang_strings[STR_CANT_MOVE_TO_SUBDIR_MSG]);
+                    snprintf(status_message, 1023, "%s", lang_strings[STR_CANT_MOVE_TO_SUBDIR_MSG]);
                     continue;
                 }
                 char new_dir[512];
@@ -854,6 +846,7 @@ namespace Actions
             else
             {
                 CopyOrMove(*it, local_directory, false);
+                FS::Rm(it->path);
             }
         }
         activity_inprogess = false;
@@ -861,13 +854,12 @@ namespace Actions
         local_paste_files.clear();
         Windows::SetModalMode(false);
         selected_action = ACTION_REFRESH_LOCAL_FILES;
-        return NULL;
+        return sceKernelExitDeleteThread(0);;
     }
 
     void MoveLocalFiles()
     {
-        sprintf(status_message, "%s", "");
-        int res = pthread_create(&bk_activity_thid, NULL, MoveLocalFilesThread, NULL);
+        snprintf(status_message, 1023, "%s", "");
         bk_activity_thid = sceKernelCreateThread("move_local_files", (SceKernelThreadEntry)MoveLocalFilesThread, 0x10000100, 0x4000, 0, 0, NULL);
         if (bk_activity_thid >= 0)
             sceKernelStartThread(bk_activity_thid, 0, NULL);
@@ -895,7 +887,7 @@ namespace Actions
             {
                 if (strncmp(local_directory, it->path, strlen(it->path)) == 0)
                 {
-                    sprintf(status_message, "%s", lang_strings[STR_CANT_COPY_TO_SUBDIR_MSG]);
+                    snprintf(status_message, 1023, "%s", lang_strings[STR_CANT_COPY_TO_SUBDIR_MSG]);
                     continue;
                 }
                 char new_dir[512];
@@ -912,12 +904,12 @@ namespace Actions
         local_paste_files.clear();
         Windows::SetModalMode(false);
         selected_action = ACTION_REFRESH_LOCAL_FILES;
-        return NULL;
+        return sceKernelExitDeleteThread(0);;
     }
 
     void CopyLocalFiles()
     {
-        sprintf(status_message, "%s", "");
+        snprintf(status_message, 1023, "%s", "");
         bk_activity_thid = sceKernelCreateThread("copy_local_files", (SceKernelThreadEntry)CopyLocalFilesThread, 0x10000100, 0x4000, 0, 0, NULL);
         if (bk_activity_thid >= 0)
             sceKernelStartThread(bk_activity_thid, 0, NULL);
@@ -983,7 +975,7 @@ namespace Actions
             {
                 if (strncmp(remote_directory, it->path, strlen(it->path)) == 0)
                 {
-                    sprintf(status_message, "%s", lang_strings[STR_CANT_MOVE_TO_SUBDIR_MSG]);
+                    snprintf(status_message, 1023, "%s", lang_strings[STR_CANT_MOVE_TO_SUBDIR_MSG]);
                     continue;
                 }
             }
@@ -991,19 +983,19 @@ namespace Actions
             snprintf(activity_message, 1024, "%s %s", lang_strings[STR_MOVING], it->path);
             int res = CopyOrMoveRemoteFile(it->path, new_path, false);
             if (res == 0)
-                sprintf(status_message, "%s - %s", it->name, lang_strings[STR_FAIL_COPY_MSG]);
+                snprintf(status_message, 1023, "%s - %s", it->name, lang_strings[STR_FAIL_COPY_MSG]);
         }
         activity_inprogess = false;
         file_transfering = false;
         remote_paste_files.clear();
         Windows::SetModalMode(false);
         selected_action = ACTION_REFRESH_REMOTE_FILES;
-        return NULL;
+        return sceKernelExitDeleteThread(0);;
     }
 
     void MoveRemoteFiles()
     {
-        sprintf(status_message, "%s", "");
+        snprintf(status_message, 1023, "%s", "");
         bk_activity_thid = sceKernelCreateThread("move_remote_files", (SceKernelThreadEntry)MoveRemoteFilesThread, 0x10000100, 0x4000, 0, 0, NULL);
         if (bk_activity_thid >= 0)
             sceKernelStartThread(bk_activity_thid, 0, NULL);
@@ -1057,7 +1049,7 @@ namespace Actions
                     ret = CopyOrMoveRemoteFile(entries[i].path, new_path, true);
                     if (ret <= 0)
                     {
-                        sprintf(status_message, "%s %s", lang_strings[STR_FAIL_COPY_MSG], entries[i].path);
+                        snprintf(status_message, 1023, "%s %s", lang_strings[STR_FAIL_COPY_MSG], entries[i].path);
                         free(new_path);
                         return ret;
                     }
@@ -1075,7 +1067,7 @@ namespace Actions
             if (ret <= 0)
             {
                 free(new_path);
-                sprintf(status_message, "%s %s", lang_strings[STR_FAIL_COPY_MSG], src.name);
+                snprintf(status_message, 1023, "%s %s", lang_strings[STR_FAIL_COPY_MSG], src.name);
                 return 0;
             }
             free(new_path);
@@ -1100,18 +1092,18 @@ namespace Actions
             {
                 if (strncmp(remote_directory, it->path, strlen(it->path)) == 0)
                 {
-                    sprintf(status_message, "%s", lang_strings[STR_CANT_COPY_TO_SUBDIR_MSG]);
+                    snprintf(status_message, 1023, "%s", lang_strings[STR_CANT_COPY_TO_SUBDIR_MSG]);
                     continue;
                 }
                 int res = CopyRemotePath(*it, new_path);
                 if (res == 0)
-                    sprintf(status_message, "%s - %s", it->name, lang_strings[STR_FAIL_COPY_MSG]);
+                    snprintf(status_message, 1023, "%s - %s", it->name, lang_strings[STR_FAIL_COPY_MSG]);
             }
             else
             {
                 int res = CopyRemotePath(*it, remote_directory);
                 if (res == 0)
-                    sprintf(status_message, "%s - %s", it->name, lang_strings[STR_FAIL_COPY_MSG]);
+                    snprintf(status_message, 1023, "%s - %s", it->name, lang_strings[STR_FAIL_COPY_MSG]);
             }
         }
         activity_inprogess = false;
@@ -1119,12 +1111,12 @@ namespace Actions
         remote_paste_files.clear();
         Windows::SetModalMode(false);
         selected_action = ACTION_REFRESH_REMOTE_FILES;
-        return NULL;
+        return sceKernelExitDeleteThread(0);;
     }
 
     void CopyRemoteFiles()
     {
-        sprintf(status_message, "%s", "");
+        snprintf(status_message, 1023, "%s", "");
         bk_activity_thid = sceKernelCreateThread("copy_remote_files", (SceKernelThreadEntry)CopyRemoteFilesThread, 0x10000100, 0x4000, 0, 0, NULL);
         if (bk_activity_thid >= 0)
             sceKernelStartThread(bk_activity_thid, 0, NULL);

@@ -28,7 +28,6 @@ std::vector<std::string> sites;
 std::vector<std::string> http_servers;
 std::map<std::string, RemoteSettings> site_settings;
 bool warn_missing_installs;
-GoogleAppInfo gg_app;
 bool show_hidden_files;
 
 namespace CONFIG
@@ -130,10 +129,6 @@ namespace CONFIG
         else if (strncmp(setting->server, "webdav://", 9) == 0 || strncmp(setting->server, "webdavs://", 10) == 0)
         {
             setting->type = CLIENT_TYPE_WEBDAV;
-        }
-        else if (strncmp(setting->server, "https://drive.google.com", 24) == 0)
-        {
-            setting->type = CLIENT_TYPE_GOOGLE;
         }
         else if (strncmp(setting->server, "http://", 7) == 0 || strncmp(setting->server, "https://", 8) == 0)
         {

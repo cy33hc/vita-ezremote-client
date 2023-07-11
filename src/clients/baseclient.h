@@ -40,7 +40,7 @@ public:
 protected:
     httplib::Client *client;
     std::string base_path;
-    char response[512];
+    char response[1024];
     bool connected = false;
 };
 

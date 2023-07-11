@@ -27,7 +27,7 @@ struct ftphandle
 	int64_t xfered;
 	int64_t xfered1;
 	int64_t cbbytes;
-	char response[512];
+	char response[1024];
 	uint64_t offset;
 	bool correctpasv;
 	FtpCallbackXfer xfercb;

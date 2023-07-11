@@ -481,7 +481,7 @@ namespace FS
 
         bytes_to_download = GetSize(from);
 
-        FILE *dest = OpenRW(to);
+        FILE *dest = Create(to);
         if (!dest)
         {
             Close(src);
@@ -526,7 +526,7 @@ namespace FS
     {
         bool res = Copy(from, to);
         if (res)
-            RmRecursive(from);
+            Rm(from);
         else
             return res;
 

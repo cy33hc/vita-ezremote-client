@@ -28,7 +28,6 @@ add_executable(${PROJECT_NAME}
   src/clients/baseclient.cpp
   src/clients/iis.cpp
   src/clients/apache.cpp
-  src/clients/gdrive.cpp
   src/clients/nginx.cpp
   src/clients/npxserve.cpp
   src/clients/ftpclient.cpp

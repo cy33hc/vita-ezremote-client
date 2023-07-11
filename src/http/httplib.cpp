@@ -1,5 +1,4 @@
 #include "http/httplib.h"
-#include "debugnet.h"
 extern "C"
 {
 #include "http/vita_compat.h"

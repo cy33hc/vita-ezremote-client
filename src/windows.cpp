@@ -165,7 +165,7 @@ namespace Windows
     {
         ImGuiStyle *style = &ImGui::GetStyle();
         ImVec4 *colors = style->Colors;
-        static char title[64];
+        static char title[128];
         sprintf(title, "v%s ezRemote %s", app_ver, lang_strings[STR_CONNECTION_SETTINGS]);
         BeginGroupPanel(title, ImVec2(945, 100));
         ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 3);
@@ -705,61 +705,62 @@ namespace Windows
             ImGui::PopID();
             ImGui::Separator();
 
-            ImGui::PushID("Cut##settings");
-            if (ImGui::Selectable(lang_strings[STR_CUT], false, getSelectableFlag(REMOTE_ACTION_CUT) | ImGuiSelectableFlags_DontClosePopups, ImVec2(220, 0)))
+            if (local_browser_selected)
             {
-                selected_action = local_browser_selected ? ACTION_LOCAL_CUT : ACTION_REMOTE_CUT;
-                SetModalMode(false);
-                ImGui::CloseCurrentPopup();
-            }
-            ImGui::PopID();
-            ImGui::Separator();
-
-            ImGui::PushID("Copy##settings");
-            if (ImGui::Selectable(lang_strings[STR_COPY], false, getSelectableFlag(REMOTE_ACTION_COPY) | ImGuiSelectableFlags_DontClosePopups, ImVec2(220, 0)))
-            {
-                selected_action = local_browser_selected ? ACTION_LOCAL_COPY : ACTION_REMOTE_COPY;
-                SetModalMode(false);
-                ImGui::CloseCurrentPopup();
-            }
-            ImGui::PopID();
-            ImGui::Separator();
-
-            ImGui::PushID("Paste##settings");
-            flags = ImGuiSelectableFlags_Disabled;
-            if ((local_browser_selected && local_paste_files.size() > 0) ||
-                (remote_browser_selected && remote_paste_files.size() > 0 &&
-                 remoteclient != nullptr && (remoteclient->SupportedActions() | REMOTE_ACTION_PASTE)))
-                flags = ImGuiSelectableFlags_None;
-            if (ImGui::Selectable(lang_strings[STR_PASTE], false, flags | ImGuiSelectableFlags_DontClosePopups, ImVec2(220, 0)))
-            {
-                SetModalMode(false);
-                selected_action = local_browser_selected ? ACTION_LOCAL_PASTE : ACTION_REMOTE_PASTE;
-                file_transfering = true;
-                confirm_transfer_state = 0;
-                dont_prompt_overwrite_cb = dont_prompt_overwrite;
-                ImGui::CloseCurrentPopup();
-            }
-            if (ImGui::IsItemHovered())
-            {
-                int height = local_browser_selected ? (local_paste_files.size() * 30) + 42 : (remote_paste_files.size() * 30) + 42;
-                ImGui::SetNextWindowSize(ImVec2(500, height));
-                ImGui::BeginTooltip();
-                int text_width = ImGui::CalcTextSize(lang_strings[STR_FILES]).x;
-                int file_pos = ImGui::GetCursorPosX() + text_width + 15;
-                ImGui::Text("%s: %s", lang_strings[STR_TYPE], (paste_action == ACTION_LOCAL_CUT | paste_action == ACTION_REMOTE_CUT) ? lang_strings[STR_CUT] : lang_strings[STR_COPY]);
-                ImGui::Text("%s:", lang_strings[STR_FILES]);
-                ImGui::SameLine();
-                std::vector<DirEntry> files = (local_browser_selected) ? local_paste_files : remote_paste_files;
-                for (std::vector<DirEntry>::iterator it = files.begin(); it != files.end(); ++it)
+                ImGui::PushID("Cut##settings");
+                if (ImGui::Selectable(lang_strings[STR_CUT], false, ImGuiSelectableFlags_DontClosePopups, ImVec2(220, 0)))
                 {
-                    ImGui::SetCursorPosX(file_pos);
-                    ImGui::Text("%s", it->path);
+                    selected_action = ACTION_LOCAL_CUT;
+                    SetModalMode(false);
+                    ImGui::CloseCurrentPopup();
                 }
-                ImGui::EndTooltip();
+                ImGui::PopID();
+                ImGui::Separator();
+            
+                ImGui::PushID("Copy##settings");
+                if (ImGui::Selectable(lang_strings[STR_COPY], false, ImGuiSelectableFlags_DontClosePopups, ImVec2(220, 0)))
+                {
+                    selected_action = ACTION_LOCAL_COPY;
+                    SetModalMode(false);
+                    ImGui::CloseCurrentPopup();
+                }
+                ImGui::PopID();
+                ImGui::Separator();
+
+                ImGui::PushID("Paste##settings");
+                flags = ImGuiSelectableFlags_Disabled;
+                if (local_browser_selected && local_paste_files.size())
+                    flags = ImGuiSelectableFlags_None;
+                if (ImGui::Selectable(lang_strings[STR_PASTE], false, flags | ImGuiSelectableFlags_DontClosePopups, ImVec2(220, 0)))
+                {
+                    SetModalMode(false);
+                    selected_action = ACTION_LOCAL_PASTE;
+                    file_transfering = true;
+                    confirm_transfer_state = 0;
+                    dont_prompt_overwrite_cb = dont_prompt_overwrite;
+                    ImGui::CloseCurrentPopup();
+                }
+                if (ImGui::IsItemHovered())
+                {
+                    int height = local_browser_selected ? (local_paste_files.size() * 30) + 42 : (remote_paste_files.size() * 30) + 42;
+                    ImGui::SetNextWindowSize(ImVec2(500, height));
+                    ImGui::BeginTooltip();
+                    int text_width = ImGui::CalcTextSize(lang_strings[STR_FILES]).x;
+                    int file_pos = ImGui::GetCursorPosX() + text_width + 15;
+                    ImGui::Text("%s: %s", lang_strings[STR_TYPE], paste_action == ACTION_LOCAL_CUT ? lang_strings[STR_CUT] : lang_strings[STR_COPY]);
+                    ImGui::Text("%s:", lang_strings[STR_FILES]);
+                    ImGui::SameLine();
+                    std::vector<DirEntry> files = local_paste_files;
+                    for (std::vector<DirEntry>::iterator it = files.begin(); it != files.end(); ++it)
+                    {
+                        ImGui::SetCursorPosX(file_pos);
+                        ImGui::Text("%s", it->path);
+                    }
+                    ImGui::EndTooltip();
+                }
+                ImGui::PopID();
+                ImGui::Separator();
             }
-            ImGui::PopID();
-            ImGui::Separator();
 
             ImGui::PushID("Delete##settings");
             if (ImGui::Selectable(lang_strings[STR_DELETE], false, getSelectableFlag(REMOTE_ACTION_DELETE) | ImGuiSelectableFlags_DontClosePopups, ImVec2(220, 0)))

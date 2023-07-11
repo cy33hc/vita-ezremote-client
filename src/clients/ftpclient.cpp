@@ -1192,17 +1192,17 @@ int FtpClient::Rmdir(const std::string &path, bool recursive)
 			ret = Rmdir(list[i].path, recursive);
 			if (ret == 0)
 			{
-				sprintf(status_message, "%s %s", lang_strings[STR_FAIL_DEL_DIR_MSG], list[i].path);
+				snprintf(status_message, 1023,"%s %s", lang_strings[STR_FAIL_DEL_DIR_MSG], list[i].path);
 				return 0;
 			}
 		}
 		else
 		{
-			sprintf(activity_message, "%s %s\n", lang_strings[STR_DELETING], list[i].path);
+			snprintf(activity_message, 1023, "%s %s\n", lang_strings[STR_DELETING], list[i].path);
 			ret = Delete(list[i].path);
 			if (ret == 0)
 			{
-				sprintf(status_message, "%s %s", lang_strings[STR_FAIL_DEL_FILE_MSG], list[i].path);
+				snprintf(status_message, 1023,"%s %s", lang_strings[STR_FAIL_DEL_FILE_MSG], list[i].path);
 				return 0;
 			}
 		}

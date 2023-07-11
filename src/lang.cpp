@@ -94,7 +94,6 @@ char lang_strings[LANG_STRINGS_NUM][LANG_STR_SIZE] = {
 	"Not a valid Package",																	// STR_NOT_A_VALID_PACKAGE
 	"Waiting for Package to finish installing",												// STR_WAIT_FOR_INSTALL_MSG
 	"Failed to install pkg file. Please delete the tmp pkg manually",						// STR_FAIL_INSTALL_TMP_PKG_MSG
-	"Failed to obtain google download URL",													// STR_FAIL_TO_OBTAIN_GG_DL_MSG
 	"Auto delete temporary downloaded pkg file after install",								// STR_AUTO_DELETE_TMP_PKG
 	"Protocol not supported",																// STR_PROTOCOL_NOT_SUPPORTED
 	"Could not resolve hostname",															// STR_COULD_NOT_RESOLVE_HOST
@@ -123,41 +122,26 @@ char lang_strings[LANG_STRINGS_NUM][LANG_STR_SIZE] = {
 	"Remote HTTP Server not reachable.",													// STR_CANNOT_CONNECT_REMOTE_MSG
 	"Remote Package Install not possible. Would you like to download package and install?", // STR_DOWNLOAD_INSTALL_MSG
 	"Checking remote server for Remote Package Install.",									// STR_CHECKING_REMOTE_SERVER_MSG
-	"RPI",																					// STR_ENABLE_RPI
-	"This option enables Remote Package Installation. "
-	"This requires a HTTP Server setup on the same host sharing the same folder with anonymous access.", // STR_ENABLE_RPI_FTP_SMB_MSG
-	"This option enables Remote Package Installation. "
-	"This requires the Server with anonymous access that does not need username/password.",		// STR_ENABLE_RPI_WEBDAV_MSG
-	"Files",																					// STR_FILES
-	"Editor",																					// STR_EDITOR
-	"Save",																						// STR_SAVE
-	"Cannot edit files bigger than",															// STR_MAX_EDIT_FILE_SIZE_MSG
-	"Delete Selected Line",																		// STR_DELETE_LINE
-	"Insert Below Selected Line",																// STR_INSERT_LINE
-	"Modified",																					// STR_MODIFIED
-	"Failed to obtain an access token from",													// STR_FAIL_GET_TOKEN_MSG
-	"Login Success. You may close the browser and return to the application",					// STR_GET_TOKEN_SUCCESS_MSG
-	"See, edit, create, and delete all of your Google Drive files",								// STR_PERM_DRIVE
-	"See, create, and delete its own configuration data in your Google Drive",					// STR_PERM_DRIVE_APPDATA
-	"See, edit, create, and delete only the specific Google Drive files you use with this app", // STR_PERM_DRIVE_FILE
-	"View and manage metadata of files in your Google Drive",									// STR_PERM_DRIVE_METADATA
-	"See information about your Google Drive files",											// STR_PERM_DRIVE_METADATA_RO
-	"Google login failed",																		// STR_GOOGLE_LOGIN_FAIL_MSG
-	"Google login timed out",																	// STR_GOOGLE_LOGIN_TIMEOUT_MSG
-	"New File",																					// STR_NEW_FILE
-	"Settings",																					// STR_SETTINGS
-	"Client ID",																				// STR_CLIENT_ID
-	"Client Secret",																			// STR_CLIENT_SECRET
-	"Global",																					// STR_GLOBAL
-	"Google",																					// STR_GOOGLE
-	"Copy selected line",																		// STR_COPY_LINE
-	"Paste into selected line",																	// STR_PASTE_LINE
-	"Show hidden files",																		// STR_SHOW_HIDDEN_FILES
-	"Set Default Folder",																		// STR_SET_DEFAULT_DIRECTORY
-	"has being set as default direcotry",														// STR_SET_DEFAULT_DIRECTORY_MSG
-	"NFS export path missing in URL",															// STR_NFS_EXP_PATH_MISSING_MSG
-	"Failed to init NFS context",																// STR_FAIL_INIT_NFS_CONTEXT
-	"Failed to mount NFS share",																// STR_FAIL_MOUNT_NFS_MSG
+	"Files",																				// STR_FILES
+	"Editor",																				// STR_EDITOR
+	"Save",																					// STR_SAVE
+	"Cannot edit files bigger than",														// STR_MAX_EDIT_FILE_SIZE_MSG
+	"Delete Selected Line",																	// STR_DELETE_LINE
+	"Insert Below Selected Line",															// STR_INSERT_LINE
+	"Modified",																				// STR_MODIFIED
+	"Failed to obtain an access token from",												// STR_FAIL_GET_TOKEN_MSG
+	"Login Success. You may close the browser and return to the application",				// STR_GET_TOKEN_SUCCESS_MSG
+	"New File",																				// STR_NEW_FILE
+	"Settings",																				// STR_SETTINGS
+	"Global",																				// STR_GLOBAL
+	"Copy selected line",																	// STR_COPY_LINE
+	"Paste into selected line",																// STR_PASTE_LINE
+	"Show hidden files",																	// STR_SHOW_HIDDEN_FILES
+	"Set Default Folder",																	// STR_SET_DEFAULT_DIRECTORY
+	"has being set as default direcotry",													// STR_SET_DEFAULT_DIRECTORY_MSG
+	"NFS export path missing in URL",														// STR_NFS_EXP_PATH_MISSING_MSG
+	"Failed to init NFS context",															// STR_FAIL_INIT_NFS_CONTEXT
+	"Failed to mount NFS share",															// STR_FAIL_MOUNT_NFS_MSG
 };
 
 bool needs_extended_font = false;

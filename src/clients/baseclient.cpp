@@ -8,7 +8,6 @@
 #include "lang.h"
 #include "util.h"
 #include "windows.h"
-#include "debugnet.h"
 
 using httplib::Client;
 using httplib::Headers;
@@ -18,6 +17,7 @@ BaseClient::BaseClient(){};
 
 BaseClient::~BaseClient()
 {
+    snprintf(response, 1023, "%s", "");
     if (client != nullptr)
         delete client;
 };
@@ -217,7 +217,6 @@ std::string BaseClient::GetFullPath(std::string ppath1)
     path1 = Util::Trim(Util::Trim(path1, " "), "/");
     path1 = this->base_path + "/" + path1;
     Util::ReplaceAll(path1, "//", "/");
-    debugNetPrintf(DEBUG, "path=%s\n", path1.c_str());
     return path1;
 }
 
@@ -234,7 +233,6 @@ bool BaseClient::Ping()
     }
     else
     {
-        debugNetPrintf(DEBUG, "%s\n", httplib::to_string(res.error()).c_str());
         sprintf(this->response, "%s", httplib::to_string(res.error()).c_str());
     }
     return false;
