@@ -11,3 +11,7 @@ CTestTestfile.cmake
 _deps
 .vscode
 build
+auth_server/dist
+auth_server/server.spec
+auth_server/google_auth_server.spec
+
