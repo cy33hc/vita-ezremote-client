@@ -7,6 +7,7 @@
 #include "clients/npxserve.h"
 #include "clients/smbclient.h"
 #include "clients/ftpclient.h"
+#include "clients/gdrive.h"
 #include "clients/nfsclient.h"
 #include "clients/webdavclient.h"
 #include "config.h"
@@ -622,7 +623,12 @@ namespace Actions
     void Connect()
     {
         CONFIG::SaveConfig();
-        if (strncmp(remote_settings->server, "webdavs://", 10) == 0 || strncmp(remote_settings->server, "webdav://", 9) == 0)
+        if (strncmp(remote_settings->server, GOOGLE_DRIVE_BASE_URL, strlen(GOOGLE_DRIVE_BASE_URL)) == 0)
+        {
+            remoteclient = new GDriveClient();
+            remoteclient->Connect("", "", "");
+        }
+        else if (strncmp(remote_settings->server, "webdavs://", 10) == 0 || strncmp(remote_settings->server, "webdav://", 9) == 0)
         {
             remoteclient = new WebDAV::WebDavClient();
         }

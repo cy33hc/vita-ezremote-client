@@ -25,7 +25,6 @@ class CustomHttpRequestHandler(http.server.SimpleHTTPRequestHandler):
         global port
 
         parsed = urlparse(self.path)
-        print("parsed path=" + parsed.path)
         if parsed.path == '/auth':
             url = parse_qs(parsed.query)["url"][0]
             client_id = parse_qs(parsed.query)["client_id"][0]
@@ -41,6 +40,7 @@ class CustomHttpRequestHandler(http.server.SimpleHTTPRequestHandler):
                 self.end_headers()
                 self.wfile.write(bytes("Waiting for user response\r\n", "utf-8"))
             else:
+                print("==== Access Token ====")
                 print(token_json)
                 self.send_response(200)
                 self.end_headers()

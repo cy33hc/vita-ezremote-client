@@ -49,6 +49,38 @@
 #define HTTP_SERVER_NGINX "Nginx"
 #define HTTP_SERVER_NPX_SERVE "Serve"
 
+#define CONFIG_GOOGLE "Google"
+#define CONFIG_GOOGLE_CLIENT_ID "google_client_id"
+#define CONFIG_GOOGLE_CLIENT_SECRET "google_client_secret"
+#define CONFIG_GOOGLE_PERMISSIONS "google_client_permissions"
+#define CONFIG_GOOGLE_ACCESS_TOKEN "google_access_token"
+#define CONFIG_GOOGLE_REFRESH_TOKEN "google_refresh_token"
+#define CONFIG_GOOGLE_TOKEN_EXPIRY "google_token_expiry"
+#define CONFIG_GOOGLE_AUTH_SERVER "google_auth_server"
+#define CONFIG_GOOGLE_AUTH_SERVER_PORT "google_auth_server_port"
+
+#define GOOGLE_OAUTH_HOST "https://oauth2.googleapis.com"
+#define GOOGLE_AUTH_URL "https://accounts.google.com/o/oauth2/v2/auth"
+#define GOOGLE_API_URL "https://www.googleapis.com"
+#define GOOGLE_DRIVE_BASE_URL "https://drive.google.com"
+#define GOOGLE_DEFAULT_PERMISSIONS "drive"
+
+struct GoogleAccountInfo
+{
+    char access_token[256];
+    char refresh_token[256];
+    uint64_t token_expiry;
+};
+
+struct GoogleAppInfo
+{
+    char client_id[140];
+    char client_secret[128];
+    char gg_auth_server[128];
+    int gg_auth_server_port;
+    char permissions[92];
+};
+
 struct RemoteSettings
 {
     char site_name[32];
@@ -57,6 +89,7 @@ struct RemoteSettings
     char password[128];
     ClientType type;
     char http_server_type[24];
+    GoogleAccountInfo gg_account;
 };
 
 extern bool swap_xo;
@@ -73,6 +106,8 @@ extern RemoteSettings *remote_settings;
 extern bool warn_missing_installs;
 extern RemoteClient *remoteclient;
 extern bool show_hidden_files;
+extern GoogleAppInfo gg_app;
+
 
 namespace CONFIG
 {
