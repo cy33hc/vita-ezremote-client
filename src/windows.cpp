@@ -34,8 +34,6 @@ static std::vector<std::string> *ime_multi_field;
 static char *ime_single_field;
 static int ime_field_size;
 
-static char txt_server_port[6];
-
 bool handle_updates = false;
 float previous_right = 0.0f;
 float previous_left = 0.0f;
@@ -56,7 +54,8 @@ char local_file_to_select[256];
 char remote_file_to_select[256];
 char local_filter[32];
 char remote_filter[32];
-char editor_text[1024];
+//char editor_text[1024];
+char dialog_editor_text[1024];
 char activity_message[1024];
 int selected_browser = 0;
 int saved_selected_browser;
@@ -173,18 +172,6 @@ namespace Windows
         std::string hidden_password = std::string("xxxxxxx");
 
         ImGui::SetCursorPosX(ImGui::GetCursorPosX() + 4);
-        /*
-        if (ImGui::ImageButton((void *)update_icon, ImVec2(25, 25)))
-        {
-            selected_action = ACTION_UPDATE_SOFTWARE;
-        }
-        if (ImGui::IsItemHovered())
-        {
-            ImGui::BeginTooltip();
-            ImGui::Text(lang_strings[STR_UPDATE_SOFTWARE]);
-            ImGui::EndTooltip();
-        }
-        */
         if (ImGui::IsWindowAppearing())
         {
             ImGui::SetItemDefaultFocus();
@@ -230,7 +217,7 @@ namespace Windows
         }
         ImGui::SameLine();
 
-        int width = 290;
+        int width = 350;
         if (remote_settings->type == CLIENT_TYPE_NFS)
             width = 600;
         ImGui::PushStyleVar(ImGuiStyleVar_ButtonTextAlign, ImVec2(0.0f, 1.0f));
@@ -243,28 +230,6 @@ namespace Windows
             ime_after_update = AferServerChangeCallback;
             Dialog::initImeDialog(lang_strings[STR_SERVER], remote_settings->server, 255, SCE_IME_TYPE_DEFAULT, 0, 0);
             gui_mode = GUI_MODE_IME;
-        }
-
-        if (remote_settings->type == CLIENT_TYPE_HTTP_SERVER)
-        {
-            ImGui::SameLine();
-            ImGui::SetNextItemWidth(100);
-            if (ImGui::BeginCombo("##HttpServer", remote_settings->http_server_type, ImGuiComboFlags_PopupAlignLeft | ImGuiComboFlags_HeightLargest | ImGuiComboFlags_NoArrowButton))
-            {
-                for (int n = 0; n < http_servers.size(); n++)
-                {
-                    const bool is_selected = strcmp(http_servers[n].c_str(), remote_settings->http_server_type) == 0;
-                    if (ImGui::Selectable(http_servers[n].c_str(), is_selected))
-                    {
-                        sprintf(remote_settings->http_server_type, "%s", http_servers[n].c_str());
-                    }
-                    // Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
-                    if (is_selected)
-                        ImGui::SetItemDefaultFocus();
-                }
-                ImGui::EndCombo();
-            }
-            ImGui::SameLine();
         }
 
         if (remote_settings->type != CLIENT_TYPE_NFS)
@@ -414,10 +379,23 @@ namespace Windows
             }
             if (ImGui::Selectable(item.name, false, ImGuiSelectableFlags_SpanAllColumns, ImVec2(452, 0)))
             {
+                selected_local_file = item;
                 if (item.isDir)
                 {
-                    selected_local_file = item;
                     selected_action = ACTION_CHANGE_LOCAL_DIRECTORY;
+                }
+                else
+                {
+                    std::string filename = Util::ToLower(selected_local_file.name);
+                    size_t dot_pos = filename.find_last_of(".");
+                    if (dot_pos != std::string::npos)
+                    {
+                        std::string ext = filename.substr(dot_pos);
+                        if (text_file_extensions.find(ext) != text_file_extensions.end())
+                        {
+                            selected_action = ACTION_LOCAL_EDIT;
+                        }
+                    }
                 }
             }
             ImGui::PopID();
@@ -564,11 +542,28 @@ namespace Windows
             ImGui::PushID(i);
             if (ImGui::Selectable(item.name, false, ImGuiSelectableFlags_SpanAllColumns, ImVec2(452, 0)))
             {
+                selected_remote_file = item;
                 if (item.isDir)
                 {
-                    selected_remote_file = item;
                     selected_action = ACTION_CHANGE_REMOTE_DIRECTORY;
                 }
+                else
+                {
+                    std::string filename = Util::ToLower(selected_remote_file.name);
+                    size_t dot_pos = filename.find_last_of(".");
+                    if (dot_pos != std::string::npos)
+                    {
+                        std::string ext = filename.substr(dot_pos);
+                        if (text_file_extensions.find(ext) != text_file_extensions.end())
+                        {
+                            selected_action = ACTION_REMOTE_EDIT;
+                        }
+                    }
+                }
+            }
+            if (ImGui::IsItemFocused())
+            {
+                selected_remote_file = item;
             }
             if (ImGui::IsItemHovered())
             {
@@ -828,6 +823,7 @@ namespace Windows
             ImGui::PopID();
             ImGui::Separator();
 
+            /*
             ImGui::PushID("Edit##settings");
             flags = ImGuiSelectableFlags_None;
             if ((remote_browser_selected && remoteclient != nullptr && (!(remoteclient->SupportedActions() & REMOTE_ACTION_EDIT) || selected_remote_file.isDir)) ||
@@ -837,37 +833,20 @@ namespace Windows
             }
             if (ImGui::Selectable(lang_strings[STR_EDIT], false, flags | ImGuiSelectableFlags_DontClosePopups, ImVec2(220, 0)))
             {
-                bool can_edit = true;
                 if (local_browser_selected)
                 {
-                    if (selected_local_file.file_size > MAX_EDIT_FILE_SIZE)
-                        can_edit = false;
-                    else
-                    {
-                        snprintf(edit_file, 255, "%s", selected_local_file.path);
-                        FS::LoadText(&edit_buffer, selected_local_file.path);
-                    }
+                    selected_action = ACTION_LOCAL_EDIT;
                 }
                 else
                 {
-                    if (selected_remote_file.file_size > MAX_EDIT_FILE_SIZE)
-                        can_edit = false;
-                    else if (remoteclient != nullptr && remoteclient->Get(TMP_EDITOR_FILE, selected_remote_file.path))
-                    {
-                        snprintf(edit_file, 255, "%s", selected_remote_file.path);
-                        FS::LoadText(&edit_buffer, TMP_EDITOR_FILE);
-                    }
+                    selected_action = ACTION_REMOTE_EDIT;
                 }
-                if (can_edit)
-                    editor_inprogress = true;
-                else
-                    sprintf(status_message, "%s %d", lang_strings[STR_MAX_EDIT_FILE_SIZE_MSG], MAX_EDIT_FILE_SIZE);
-                editor_modified = false;
                 SetModalMode(false);
                 ImGui::CloseCurrentPopup();
             }
             ImGui::PopID();
             ImGui::Separator();
+            */
 
             flags = ImGuiSelectableFlags_Disabled;
             if (local_browser_selected)
@@ -939,6 +918,12 @@ namespace Windows
             {
                 ImGui::SetItemDefaultFocus();
             }
+            if (io.NavInputs[ImGuiNavInput_Cancel] == 1.0f)
+            {
+                SetModalMode(false);
+                ImGui::CloseCurrentPopup();
+            }
+
             ImGui::EndPopup();
         }
 
@@ -959,6 +944,7 @@ namespace Windows
                 {
                     confirm_state = CONFIRM_NO;
                     selected_action = ACTION_NONE;
+                    SetModalMode(false);
                     ImGui::CloseCurrentPopup();
                 };
                 ImGui::SameLine();
@@ -966,6 +952,7 @@ namespace Windows
                 {
                     confirm_state = CONFIRM_YES;
                     selected_action = action_to_take;
+                    SetModalMode(false);
                     ImGui::CloseCurrentPopup();
                 }
                 ImGui::EndPopup();
@@ -1061,7 +1048,6 @@ namespace Windows
                 selected_action = ACTION_NONE;
                 ImGui::CloseCurrentPopup();
             }
-
             ImGui::EndPopup();
         }
     }
@@ -1116,24 +1102,6 @@ namespace Windows
         }
     }
 
-    void ShowUpdatesDialog()
-    {
-        if (handle_updates)
-        {
-            SetModalMode(true);
-
-            ImGui::OpenPopup(lang_strings[STR_UPDATES]);
-            ImGui::SetNextWindowPos(ImVec2(300, 200));
-            ImGui::SetNextWindowSize(ImVec2(400, 90));
-            if (ImGui::BeginPopupModal(lang_strings[STR_UPDATES], nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoScrollbar))
-            {
-                ImGui::SetNextWindowSizeConstraints(ImVec2(0, 0), ImVec2(400, 140));
-                ImGui::Text("%s", updater_message);
-                ImGui::EndPopup();
-            }
-        }
-    }
-
     void MainWindow()
     {
         Windows::SetupWindow();
@@ -1141,7 +1109,7 @@ namespace Windows
         (void)io;
         ImGui::SetMouseCursor(ImGuiMouseCursor_None);
 
-        if (ImGui::Begin("WebDAV Client", nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoScrollbar))
+        if (ImGui::Begin("Remote Client", nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoScrollbar))
         {
             ConnectionPanel();
             ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 3);
@@ -1150,7 +1118,6 @@ namespace Windows
             StatusPanel();
             ShowProgressDialog();
             ShowActionsDialog();
-            ShowUpdatesDialog();
         }
         ImGui::End();
     }
@@ -1185,33 +1152,37 @@ namespace Windows
         case ACTION_NEW_REMOTE_FILE:
             if (gui_mode != GUI_MODE_IME)
             {
-                sprintf(editor_text, "");
-                ime_single_field = editor_text;
+                sprintf(dialog_editor_text, "");
+                ime_single_field = dialog_editor_text;
                 ResetImeCallbacks();
                 ime_field_size = 128;
                 ime_after_update = AfterFolderNameCallback;
                 ime_cancelled = CancelActionCallBack;
                 ime_callback = SingleValueImeCallback;
-                Dialog::initImeDialog((selected_action == ACTION_NEW_LOCAL_FILE || selected_action == ACTION_NEW_REMOTE_FILE)? lang_strings[STR_NEW_FILE]: lang_strings[STR_NEW_FOLDER], editor_text, 128, SCE_IME_TYPE_DEFAULT, 0, 0);
+                Dialog::initImeDialog((selected_action == ACTION_NEW_LOCAL_FILE || selected_action == ACTION_NEW_REMOTE_FILE)? lang_strings[STR_NEW_FILE]: lang_strings[STR_NEW_FOLDER], dialog_editor_text, 128, SCE_IME_TYPE_DEFAULT, 0, 0);
                 gui_mode = GUI_MODE_IME;
             }
             break;
         case ACTION_DELETE_LOCAL:
             activity_inprogess = true;
+            sprintf(activity_message, "%s", "");
             stop_activity = false;
             selected_action = ACTION_NONE;
             Actions::DeleteSelectedLocalFiles();
             break;
         case ACTION_DELETE_REMOTE:
             activity_inprogess = true;
+            sprintf(activity_message, "%s", "");
             stop_activity = false;
             selected_action = ACTION_NONE;
             Actions::DeleteSelectedRemotesFiles();
             break;
         case ACTION_UPLOAD:
+            sprintf(status_message, "%s", "");
             if (dont_prompt_overwrite || (!dont_prompt_overwrite && confirm_transfer_state == 1))
             {
                 activity_inprogess = true;
+                sprintf(activity_message, "%s", "");
                 stop_activity = false;
                 Actions::UploadFiles();
                 confirm_transfer_state = -1;
@@ -1219,9 +1190,11 @@ namespace Windows
             }
             break;
         case ACTION_DOWNLOAD:
+            sprintf(status_message, "%s", "");
             if (dont_prompt_overwrite || (!dont_prompt_overwrite && confirm_transfer_state == 1))
             {
                 activity_inprogess = true;
+                sprintf(activity_message, "%s", "");
                 stop_activity = false;
                 Actions::DownloadFiles();
                 confirm_transfer_state = -1;
@@ -1231,28 +1204,34 @@ namespace Windows
         case ACTION_RENAME_LOCAL:
             if (gui_mode != GUI_MODE_IME)
             {
-                sprintf(editor_text, multi_selected_local_files.begin()->name);
-                ime_single_field = editor_text;
+                if (multi_selected_local_files.size() > 0)
+                    sprintf(dialog_editor_text, "%s", multi_selected_local_files.begin()->name);
+                else
+                    sprintf(dialog_editor_text, "%s", selected_local_file.name);
+                ime_single_field = dialog_editor_text;
                 ResetImeCallbacks();
                 ime_field_size = 128;
                 ime_after_update = AfterFolderNameCallback;
                 ime_cancelled = CancelActionCallBack;
                 ime_callback = SingleValueImeCallback;
-                Dialog::initImeDialog(lang_strings[STR_RENAME], editor_text, 128, SCE_IME_TYPE_DEFAULT, 0, 0);
+                Dialog::initImeDialog(lang_strings[STR_RENAME], dialog_editor_text, 128, SCE_IME_TYPE_DEFAULT, 0, 0);
                 gui_mode = GUI_MODE_IME;
             }
             break;
         case ACTION_RENAME_REMOTE:
             if (gui_mode != GUI_MODE_IME)
             {
-                sprintf(editor_text, multi_selected_remote_files.begin()->name);
-                ime_single_field = editor_text;
+                if (multi_selected_remote_files.size() > 0)
+                    sprintf(dialog_editor_text, "%s", multi_selected_remote_files.begin()->name);
+                else
+                    sprintf(dialog_editor_text, "%s", selected_remote_file.name);
+                ime_single_field = dialog_editor_text;
                 ResetImeCallbacks();
                 ime_field_size = 128;
                 ime_after_update = AfterFolderNameCallback;
                 ime_cancelled = CancelActionCallBack;
                 ime_callback = SingleValueImeCallback;
-                Dialog::initImeDialog(lang_strings[STR_RENAME], editor_text, 128, SCE_IME_TYPE_DEFAULT, 0, 0);
+                Dialog::initImeDialog(lang_strings[STR_RENAME], dialog_editor_text, 128, SCE_IME_TYPE_DEFAULT, 0, 0);
                 gui_mode = GUI_MODE_IME;
             }
             break;
@@ -1279,15 +1258,12 @@ namespace Windows
             selected_action = ACTION_NONE;
             break;
         case ACTION_CONNECT:
+            sprintf(status_message, "%s", "");
             Actions::Connect();
             break;
         case ACTION_DISCONNECT:
+            sprintf(status_message, "%s", "");
             Actions::Disconnect();
-            break;
-        case ACTION_UPDATE_SOFTWARE:
-            handle_updates = true;
-            selected_action = ACTION_NONE;
-            Updater::StartUpdaterThread();
             break;
         case ACTION_LOCAL_CUT:
         case ACTION_LOCAL_COPY:
@@ -1350,6 +1326,30 @@ namespace Windows
                 }
                 selected_action = ACTION_NONE;
             }
+            break;
+        case ACTION_LOCAL_EDIT:
+            if (selected_local_file.file_size > max_edit_file_size)
+                sprintf(status_message, "%s %d", lang_strings[STR_MAX_EDIT_FILE_SIZE_MSG], max_edit_file_size);
+            else
+            {
+                snprintf(edit_file, 255, "%s", selected_local_file.path);
+                FS::LoadText(&edit_buffer, selected_local_file.path);
+                editor_inprogress = true;
+            }
+            editor_modified = false;
+            selected_action = ACTION_NONE;
+            break;
+        case ACTION_REMOTE_EDIT:
+            if (selected_remote_file.file_size > max_edit_file_size)
+                sprintf(status_message, "%s %d", lang_strings[STR_MAX_EDIT_FILE_SIZE_MSG], max_edit_file_size);
+            else if (remoteclient != nullptr && remoteclient->Get(TMP_EDITOR_FILE, selected_remote_file.path))
+            {
+                snprintf(edit_file, 255, "%s", selected_remote_file.path);
+                FS::LoadText(&edit_buffer, TMP_EDITOR_FILE);
+                editor_inprogress = true;
+            }
+            editor_modified = false;
+            selected_action = ACTION_NONE;
             break;
         default:
             break;
@@ -1446,21 +1446,34 @@ namespace Windows
 
     void AfterFolderNameCallback(int ime_result)
     {
-        if (selected_action == ACTION_NEW_LOCAL_FOLDER)
+        switch (selected_action)
         {
-            Actions::CreateNewLocalFolder(editor_text);
-        }
-        else if (selected_action == ACTION_NEW_REMOTE_FOLDER)
-        {
-            Actions::CreateNewRemoteFolder(editor_text);
-        }
-        else if (selected_action == ACTION_RENAME_LOCAL)
-        {
-            Actions::RenameLocalFolder(multi_selected_local_files.begin()->path, editor_text);
-        }
-        else if (selected_action == ACTION_RENAME_REMOTE)
-        {
-            Actions::RenameRemoteFolder(multi_selected_remote_files.begin()->path, editor_text);
+        case ACTION_NEW_LOCAL_FOLDER:
+            Actions::CreateNewLocalFolder(dialog_editor_text);
+            break;
+        case ACTION_NEW_REMOTE_FOLDER:
+            Actions::CreateNewRemoteFolder(dialog_editor_text);
+            break;
+        case ACTION_RENAME_LOCAL:
+            if (multi_selected_local_files.size() > 0)
+                Actions::RenameLocalFolder(multi_selected_local_files.begin()->path, dialog_editor_text);
+            else
+                Actions::RenameLocalFolder(selected_local_file.path, dialog_editor_text);
+            break;
+        case ACTION_RENAME_REMOTE:
+            if (multi_selected_remote_files.size() > 0)
+                Actions::RenameRemoteFolder(multi_selected_remote_files.begin()->path, dialog_editor_text);
+            else
+                Actions::RenameRemoteFolder(selected_remote_file.path, dialog_editor_text);
+            break;
+        case ACTION_NEW_LOCAL_FILE:
+            Actions::CreateLocalFile(dialog_editor_text);
+            break;
+        case ACTION_NEW_REMOTE_FILE:
+            Actions::CreateRemoteFile(dialog_editor_text);
+            break;
+        default:
+            break;
         }
         selected_action = ACTION_NONE;
     }

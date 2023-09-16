@@ -25,18 +25,10 @@ include_directories(
 )
 
 add_executable(${PROJECT_NAME}
-  src/clients/baseclient.cpp
-  src/clients/iis.cpp
-  src/clients/apache.cpp
-  src/clients/nginx.cpp
-  src/clients/npxserve.cpp
   src/clients/ftpclient.cpp
-  src/clients/gdrive.cpp
   src/clients/nfsclient.cpp
   src/clients/webdavclient.cpp
   src/clients/smbclient.cpp
-  src/http/vita_compat.c
-  src/http/httplib.cpp
   src/textures.cpp
   src/fs.cpp
   src/main.cpp
@@ -67,10 +59,6 @@ add_executable(${PROJECT_NAME}
 target_link_libraries(${PROJECT_NAME}
   stdc++
   c
-  debugnet
-  lexbor
-  lexbor_static
-  json-c
   imgui
   vita2d
   vitaGL
@@ -84,6 +72,7 @@ target_link_libraries(${PROJECT_NAME}
   pthread
   nfs
   smb2
+  ssh2
   SceCommonDialog_stub
   SceLibKernel_stub
   SceDisplay_stub

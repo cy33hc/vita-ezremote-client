@@ -24,12 +24,12 @@ char app_ver[6];
 char last_site[32];
 char display_site[64];
 char language[32];
+int max_edit_file_size;
 std::vector<std::string> sites;
-std::vector<std::string> http_servers;
 std::map<std::string, RemoteSettings> site_settings;
+std::set<std::string> text_file_extensions;
 bool warn_missing_installs;
 bool show_hidden_files;
-GoogleAppInfo gg_app;
 
 namespace CONFIG
 {
@@ -44,7 +44,7 @@ namespace CONFIG
         }
 
         sites = {"Site 1", "Site 2", "Site 3", "Site 4", "Site 5", "Site 6", "Site 7", "Site 8", "Site 9", "Site 10"};
-        http_servers = {HTTP_SERVER_APACHE, HTTP_SERVER_MS_IIS, HTTP_SERVER_NGINX, HTTP_SERVER_NPX_SERVE};
+        text_file_extensions = { ".txt", ".ini", ".log", ".json", ".xml", ".html", ".xhtml", ".conf", ".config" };
 
         OpenIniFile(CONFIG_INI_FILE);
 
@@ -67,22 +67,8 @@ namespace CONFIG
         show_hidden_files = ReadBool(CONFIG_GLOBAL, CONFIG_SHOW_HIDDEN_FILES, false);
         WriteBool(CONFIG_GLOBAL, CONFIG_SHOW_HIDDEN_FILES, show_hidden_files);
 
-        // Load Google Account Info
-        sprintf(gg_app.client_id, "%s", ReadString(CONFIG_GOOGLE, CONFIG_GOOGLE_CLIENT_ID, ""));
-        WriteString(CONFIG_GOOGLE, CONFIG_GOOGLE_CLIENT_ID, gg_app.client_id);
-
-        // Client Secret
-        sprintf(gg_app.client_secret, "%s", ReadString(CONFIG_GOOGLE, CONFIG_GOOGLE_CLIENT_SECRET, ""));
-        WriteString(CONFIG_GOOGLE, CONFIG_GOOGLE_CLIENT_SECRET, gg_app.client_secret);
-
-        sprintf(gg_app.permissions, "%s", ReadString(CONFIG_GOOGLE, CONFIG_GOOGLE_PERMISSIONS, GOOGLE_DEFAULT_PERMISSIONS));
-        WriteString(CONFIG_GOOGLE, CONFIG_GOOGLE_PERMISSIONS, gg_app.permissions);
-
-        sprintf(gg_app.gg_auth_server, "%s", ReadString(CONFIG_GOOGLE, CONFIG_GOOGLE_AUTH_SERVER, "192.168.100.60"));
-        WriteString(CONFIG_GOOGLE, CONFIG_GOOGLE_AUTH_SERVER, gg_app.gg_auth_server);
-
-        gg_app.gg_auth_server_port = ReadInt(CONFIG_GOOGLE, CONFIG_GOOGLE_AUTH_SERVER_PORT, 8080);
-        WriteInt(CONFIG_GOOGLE, CONFIG_GOOGLE_AUTH_SERVER_PORT, gg_app.gg_auth_server_port);
+        max_edit_file_size = ReadInt(CONFIG_GLOBAL, CONFIG_MAX_EDIT_FILE_SIZE, MAX_EDIT_FILE_SIZE);
+        WriteInt(CONFIG_GLOBAL, CONFIG_MAX_EDIT_FILE_SIZE, max_edit_file_size);
 
         for (int i = 0; i < sites.size(); i++)
         {
@@ -97,21 +83,6 @@ namespace CONFIG
 
             sprintf(setting.password, "%s", ReadString(sites[i].c_str(), CONFIG_REMOTE_SERVER_PASSWORD, ""));
             WriteString(sites[i].c_str(), CONFIG_REMOTE_SERVER_PASSWORD, setting.password);
-
-            sprintf(setting.http_server_type, "%s", ReadString(sites[i].c_str(), CONFIG_REMOTE_HTTP_SERVER_TYPE, HTTP_SERVER_APACHE));
-            WriteString(sites[i].c_str(), CONFIG_REMOTE_HTTP_SERVER_TYPE, setting.http_server_type);
-
-            // Token Expiry
-            setting.gg_account.token_expiry = ReadLong(sites[i].c_str(), CONFIG_GOOGLE_TOKEN_EXPIRY, 0);
-            WriteLong(sites[i].c_str(), CONFIG_GOOGLE_TOKEN_EXPIRY, setting.gg_account.token_expiry);
-
-            // Access Token
-            sprintf(setting.gg_account.access_token, "%s", ReadString(sites[i].c_str(), CONFIG_GOOGLE_ACCESS_TOKEN, ""));
-            WriteString(sites[i].c_str(), CONFIG_GOOGLE_ACCESS_TOKEN, setting.gg_account.access_token);
-
-            // Refresh Token
-            sprintf(setting.gg_account.refresh_token, "%s", ReadString(sites[i].c_str(), CONFIG_GOOGLE_REFRESH_TOKEN, ""));
-            WriteString(sites[i].c_str(), CONFIG_GOOGLE_REFRESH_TOKEN, setting.gg_account.refresh_token);
 
             SetClientType(&setting);
             site_settings.insert(std::make_pair(sites[i], setting));
@@ -140,10 +111,6 @@ namespace CONFIG
         WriteString(last_site, CONFIG_REMOTE_SERVER, remote_settings->server);
         WriteString(last_site, CONFIG_REMOTE_SERVER_USER, remote_settings->username);
         WriteString(last_site, CONFIG_REMOTE_SERVER_PASSWORD, remote_settings->password);
-        WriteString(last_site, CONFIG_REMOTE_HTTP_SERVER_TYPE, remote_settings->http_server_type);
-        WriteString(last_site, CONFIG_GOOGLE_ACCESS_TOKEN, remote_settings->gg_account.access_token);
-        WriteString(last_site, CONFIG_GOOGLE_REFRESH_TOKEN, remote_settings->gg_account.refresh_token);
-        WriteLong(last_site, CONFIG_GOOGLE_TOKEN_EXPIRY, remote_settings->gg_account.token_expiry);
         WriteString(CONFIG_GLOBAL, CONFIG_LAST_SITE, last_site);
         WriteIniFile(CONFIG_INI_FILE);
         CloseIniFile();
@@ -155,21 +122,13 @@ namespace CONFIG
         {
             setting->type = CLIENT_TYPE_SMB;
         }
-        else if (strncmp(setting->server, "ftp://", 6) == 0 || strncmp(setting->server, "sftp://", 7) == 0)
+        else if (strncmp(setting->server, "ftp://", 6) == 0)
         {
             setting->type = CLIENT_TYPE_FTP;
         }
         else if (strncmp(setting->server, "webdav://", 9) == 0 || strncmp(setting->server, "webdavs://", 10) == 0)
         {
             setting->type = CLIENT_TYPE_WEBDAV;
-        }
-        else if (strncmp(setting->server, "https://drive.google.com", 24) == 0)
-        {
-            setting->type = CLIENT_TYPE_GOOGLE;
-        }
-        else if (strncmp(setting->server, "http://", 7) == 0 || strncmp(setting->server, "https://", 8) == 0)
-        {
-            setting->type = CLIENT_TYPE_HTTP_SERVER;
         }
         else if (strncmp(setting->server, "nfs://", 6) == 0)
         {

@@ -1,13 +1,8 @@
 #include <vitasdk.h>
 #include <string.h>
 #include "clients/remote_client.h"
-#include "clients/apache.h"
-#include "clients/iis.h"
-#include "clients/nginx.h"
-#include "clients/npxserve.h"
 #include "clients/smbclient.h"
 #include "clients/ftpclient.h"
-#include "clients/gdrive.h"
 #include "clients/nfsclient.h"
 #include "clients/webdavclient.h"
 #include "config.h"
@@ -15,7 +10,6 @@
 #include "lang.h"
 #include "util.h"
 #include "windows.h"
-#include <debugnet.h>
 
 namespace Actions
 {
@@ -623,12 +617,7 @@ namespace Actions
     void Connect()
     {
         CONFIG::SaveConfig();
-        if (strncmp(remote_settings->server, GOOGLE_DRIVE_BASE_URL, strlen(GOOGLE_DRIVE_BASE_URL)) == 0)
-        {
-            remoteclient = new GDriveClient();
-            remoteclient->Connect("", "", "");
-        }
-        else if (strncmp(remote_settings->server, "webdavs://", 10) == 0 || strncmp(remote_settings->server, "webdav://", 9) == 0)
+        if (strncmp(remote_settings->server, "webdavs://", 10) == 0 || strncmp(remote_settings->server, "webdav://", 9) == 0)
         {
             remoteclient = new WebDAV::WebDavClient();
         }
@@ -647,17 +636,6 @@ namespace Actions
         else if (strncmp(remote_settings->server, "nfs://", 6) == 0)
         {
             remoteclient = new NfsClient();
-        }
-        else if (strncmp(remote_settings->server, "http://", 7) == 0 || strncmp(remote_settings->server, "https://", 8) == 0)
-        {
-            if (strcmp(remote_settings->http_server_type, HTTP_SERVER_APACHE) == 0)
-                remoteclient = new ApacheClient();
-            else if (strcmp(remote_settings->http_server_type, HTTP_SERVER_MS_IIS) == 0)
-                remoteclient = new IISClient();
-            else if (strcmp(remote_settings->http_server_type, HTTP_SERVER_NGINX) == 0)
-                remoteclient = new NginxClient();
-            else if (strcmp(remote_settings->http_server_type, HTTP_SERVER_NPX_SERVE) == 0)
-                remoteclient = new NpxServeClient();
         }
         else
         {

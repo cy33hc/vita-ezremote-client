@@ -1,14 +1,14 @@
 //
 //  httplib.h
 //
-//  Copyright (c) 2022 Yuji Hirose. All rights reserved.
+//  Copyright (c) 2023 Yuji Hirose. All rights reserved.
 //  MIT License
 //
 
 #ifndef CPPHTTPLIB_HTTPLIB_H
 #define CPPHTTPLIB_HTTPLIB_H
 
-#define CPPHTTPLIB_VERSION "0.12.0"
+#define CPPHTTPLIB_VERSION "0.13.1"
 
 /*
  * Configuration
@@ -175,6 +175,12 @@ using socket_t = SOCKET;
 #if !defined(_AIX) && !defined(__vita__)
 #include <ifaddrs.h>
 #endif
+#ifdef __MVS__
+#include <strings.h>
+#ifndef NI_MAXHOST
+#define NI_MAXHOST 1025
+#endif
+#endif
 #if !defined(__vita__)
 #include <net/if.h>
 #endif
@@ -227,6 +233,9 @@ using socket_t = int;
 #include <string>
 #include <sys/stat.h>
 #include <thread>
+#include <unordered_map>
+#include <unordered_set>
+#include <utility>
 
 #ifdef CPPHTTPLIB_OPENSSL_SUPPORT
 #ifdef _WIN32
@@ -243,7 +252,13 @@ using socket_t = int;
 #pragma comment(lib, "crypt32.lib")
 #pragma comment(lib, "cryptui.lib")
 #endif
-#endif //_WIN32
+#elif defined(CPPHTTPLIB_USE_CERTS_FROM_MACOSX_KEYCHAIN) && defined(__APPLE__)
+#include <TargetConditionals.h>
+#if TARGET_OS_OSX
+#include <CoreFoundation/CoreFoundation.h>
+#include <Security/Security.h>
+#endif // TARGET_OS_OSX
+#endif // _WIN32
 
 #include <openssl/err.h>
 #include <openssl/evp.h>
@@ -257,9 +272,7 @@ using socket_t = int;
 #include <iostream>
 #include <sstream>
 
-#if OPENSSL_VERSION_NUMBER < 0x1010100fL
-#error Sorry, OpenSSL versions prior to 1.1.1 are not supported
-#elif OPENSSL_VERSION_NUMBER < 0x30000000L
+#if OPENSSL_VERSION_NUMBER < 0x30000000L
 #define SSL_get1_peer_certificate SSL_get_peer_certificate
 #endif
 
@@ -312,6 +325,34 @@ struct ci {
   }
 };
 
+// This is based on
+// "http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2014/n4189".
+
+struct scope_exit {
+  explicit scope_exit(std::function<void(void)> &&f)
+      : exit_function(std::move(f)), execute_on_destruction{true} {}
+
+  scope_exit(scope_exit &&rhs)
+      : exit_function(std::move(rhs.exit_function)),
+        execute_on_destruction{rhs.execute_on_destruction} {
+    rhs.release();
+  }
+
+  ~scope_exit() {
+    if (execute_on_destruction) { this->exit_function(); }
+  }
+
+  void release() { this->execute_on_destruction = false; }
+
+private:
+  scope_exit(const scope_exit &) = delete;
+  void operator=(const scope_exit &) = delete;
+  scope_exit &operator=(scope_exit &&) = delete;
+
+  std::function<void(void)> exit_function;
+  bool execute_on_destruction;
+};
+
 } // namespace detail
 
 using Headers = std::multimap<std::string, std::string, detail::ci>;
@@ -344,6 +385,7 @@ public:
 
   std::function<bool(const char *data, size_t data_len)> write;
   std::function<void()> done;
+  std::function<void(const Headers &trailer)> done_with_trailer;
   std::ostream os;
 
 private:
@@ -434,6 +476,7 @@ struct Request {
   MultipartFormDataMap files;
   Ranges ranges;
   Match matches;
+  std::unordered_map<std::string, std::string> path_params;
 
   // for client
   ResponseHandler response_handler;
@@ -627,6 +670,76 @@ using SocketOptions = std::function<void(socket_t sock)>;
 
 void default_socket_options(socket_t sock);
 
+namespace detail {
+
+class MatcherBase {
+public:
+  virtual ~MatcherBase() = default;
+
+  // Match request path and populate its matches and
+  virtual bool match(Request &request) const = 0;
+};
+
+/**
+ * Captures parameters in request path and stores them in Request::path_params
+ *
+ * Capture name is a substring of a pattern from : to /.
+ * The rest of the pattern is matched agains the request path directly
+ * Parameters are captured starting from the next character after
+ * the end of the last matched static pattern fragment until the next /.
+ *
+ * Example pattern:
+ * "/path/fragments/:capture/more/fragments/:second_capture"
+ * Static fragments:
+ * "/path/fragments/", "more/fragments/"
+ *
+ * Given the following request path:
+ * "/path/fragments/:1/more/fragments/:2"
+ * the resulting capture will be
+ * {{"capture", "1"}, {"second_capture", "2"}}
+ */
+class PathParamsMatcher : public MatcherBase {
+public:
+  PathParamsMatcher(const std::string &pattern);
+
+  bool match(Request &request) const override;
+
+private:
+  static constexpr char marker = ':';
+  // Treat segment separators as the end of path parameter capture
+  // Does not need to handle query parameters as they are parsed before path
+  // matching
+  static constexpr char separator = '/';
+
+  // Contains static path fragments to match against, excluding the '/' after
+  // path params
+  // Fragments are separated by path params
+  std::vector<std::string> static_fragments_;
+  // Stores the names of the path parameters to be used as keys in the
+  // Request::path_params map
+  std::vector<std::string> param_names_;
+};
+
+/**
+ * Performs std::regex_match on request path
+ * and stores the result in Request::matches
+ *
+ * Note that regex match is performed directly on the whole request.
+ * This means that wildcard patterns may match multiple path segments with /:
+ * "/begin/(.*)/end" will match both "/begin/middle/end" and "/begin/1/2/end".
+ */
+class RegexMatcher : public MatcherBase {
+public:
+  RegexMatcher(const std::string &pattern) : regex_(pattern) {}
+
+  bool match(Request &request) const override;
+
+private:
+  std::regex regex_;
+};
+
+} // namespace detail
+
 class Server {
 public:
   using Handler = std::function<void(const Request &, Response &)>;
@@ -712,6 +825,7 @@ public:
   bool listen(const std::string &host, int port, int socket_flags = 0);
 
   bool is_running() const;
+  void wait_until_ready() const;
   void stop();
 
   std::function<TaskQueue *(void)> new_task_queue;
@@ -721,7 +835,7 @@ protected:
                        bool &connection_closed,
                        const std::function<void(Request &)> &setup_request);
 
-  std::atomic<socket_t> svr_sock_;
+  std::atomic<socket_t> svr_sock_{INVALID_SOCKET};
   size_t keep_alive_max_count_ = CPPHTTPLIB_KEEPALIVE_MAX_COUNT;
   time_t keep_alive_timeout_sec_ = CPPHTTPLIB_KEEPALIVE_TIMEOUT_SECOND;
   time_t read_timeout_sec_ = CPPHTTPLIB_READ_TIMEOUT_SECOND;
@@ -733,9 +847,14 @@ protected:
   size_t payload_max_length_ = CPPHTTPLIB_PAYLOAD_MAX_LENGTH;
 
 private:
-  using Handlers = std::vector<std::pair<std::regex, Handler>>;
+  using Handlers =
+      std::vector<std::pair<std::unique_ptr<detail::MatcherBase>, Handler>>;
   using HandlersForContentReader =
-      std::vector<std::pair<std::regex, HandlerWithContentReader>>;
+      std::vector<std::pair<std::unique_ptr<detail::MatcherBase>,
+                            HandlerWithContentReader>>;
+
+  static std::unique_ptr<detail::MatcherBase>
+  make_matcher(const std::string &pattern);
 
   socket_t create_server_socket(const std::string &host, int port,
                                 int socket_flags,
@@ -773,10 +892,13 @@ private:
                                      ContentReceiver multipart_receiver);
   bool read_content_core(Stream &strm, Request &req, Response &res,
                          ContentReceiver receiver,
-                         MultipartContentHeader mulitpart_header,
+                         MultipartContentHeader multipart_header,
                          ContentReceiver multipart_receiver);
 
   virtual bool process_and_close_socket(socket_t sock);
+
+  std::atomic<bool> is_running_{false};
+  std::atomic<bool> done_{false};
 
   struct MountPointEntry {
     std::string mount_point;
@@ -784,10 +906,9 @@ private:
     Headers headers;
   };
   std::vector<MountPointEntry> base_dirs_;
-
-  std::atomic<bool> is_running_;
   std::map<std::string, std::string> file_extension_and_mimetype_map_;
   Handler file_request_handler_;
+
   Handlers get_handlers_;
   Handlers post_handlers_;
   HandlersForContentReader post_handlers_for_content_reader_;
@@ -798,12 +919,14 @@ private:
   Handlers delete_handlers_;
   HandlersForContentReader delete_handlers_for_content_reader_;
   Handlers options_handlers_;
+
   HandlerWithResponse error_handler_;
   ExceptionHandler exception_handler_;
   HandlerWithResponse pre_routing_handler_;
   Handler post_routing_handler_;
-  Logger logger_;
   Expect100ContinueHandler expect_100_continue_handler_;
+
+  Logger logger_;
 
   int address_family_ = AF_UNSPEC;
   bool tcp_nodelay_ = CPPHTTPLIB_TCP_NODELAY;
@@ -827,6 +950,9 @@ enum class Error {
   UnsupportedMultipartBoundaryChars,
   Compression,
   ConnectionTimeout,
+
+  // For internal use only
+  SSLPeerCouldBeClosed_,
 };
 
 std::string to_string(const Error error);
@@ -835,6 +961,7 @@ std::ostream &operator<<(std::ostream &os, const Error &obj);
 
 class Result {
 public:
+  Result() = default;
   Result(std::unique_ptr<Response> &&res, Error err,
          Headers &&request_headers = Headers{})
       : res_(std::move(res)), err_(err),
@@ -863,7 +990,7 @@ public:
 
 private:
   std::unique_ptr<Response> res_;
-  Error err_;
+  Error err_ = Error::Unknown;
   Headers request_headers_;
 };
 
@@ -1023,11 +1150,13 @@ public:
   bool send(Request &req, Response &res, Error &error);
   Result send(const Request &req);
 
-  size_t is_socket_open() const;
-
-  socket_t socket() const;
-
   void stop();
+
+  std::string host() const;
+  int port() const;
+
+  size_t is_socket_open() const;
+  socket_t socket() const;
 
   void set_hostname_addr_map(std::map<std::string, std::string> addr_map);
 
@@ -1081,6 +1210,7 @@ public:
   void set_ca_cert_path(const std::string &ca_cert_file_path,
                         const std::string &ca_cert_dir_path = std::string());
   void set_ca_cert_store(X509_STORE *ca_cert_store);
+  X509_STORE *create_ca_cert_store(const char *ca_cert, std::size_t size);
 #endif
 
 #ifdef CPPHTTPLIB_OPENSSL_SUPPORT
@@ -1098,8 +1228,6 @@ protected:
 
     bool is_open() const { return sock != INVALID_SOCKET; }
   };
-
-  Result send_(Request &&req);
 
   virtual bool create_and_connect_socket(Socket &socket, Error &error);
 
@@ -1122,7 +1250,7 @@ protected:
 
   void copy_settings(const ClientImpl &rhs);
 
-  // Socket endoint information
+  // Socket endpoint information
   const std::string host_;
   const int port_;
   const std::string host_and_port_;
@@ -1201,6 +1329,9 @@ protected:
   Logger logger_;
 
 private:
+  bool send_(Request &req, Response &res, Error &error);
+  Result send_(Request &&req);
+
   socket_t create_client_socket(Error &error) const;
   bool read_response_line(Stream &strm, const Request &req, Response &res);
   bool write_request(Stream &strm, Request &req, bool close_connection,
@@ -1394,11 +1525,13 @@ public:
   bool send(Request &req, Response &res, Error &error);
   Result send(const Request &req);
 
-  size_t is_socket_open() const;
-
-  socket_t socket() const;
-
   void stop();
+
+  std::string host() const;
+  int port() const;
+
+  size_t is_socket_open() const;
+  socket_t socket() const;
 
   void set_hostname_addr_map(std::map<std::string, std::string> addr_map);
 
@@ -1460,6 +1593,7 @@ public:
                         const std::string &ca_cert_dir_path = std::string());
 
   void set_ca_cert_store(X509_STORE *ca_cert_store);
+  void load_ca_cert_store(const char *ca_cert, std::size_t size);
 
   long get_openssl_verify_result() const;
 
@@ -1519,6 +1653,7 @@ public:
   bool is_valid() const override;
 
   void set_ca_cert_store(X509_STORE *ca_cert_store);
+  void load_ca_cert_store(const char *ca_cert, std::size_t size);
 
   long get_openssl_verify_result() const;
 
@@ -1628,17 +1763,17 @@ inline ssize_t Stream::write_format(const char *fmt, const Args &...args) {
 inline void default_socket_options(socket_t sock) {
   int yes = 1;
 #ifdef _WIN32
-  setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, reinterpret_cast<char *>(&yes),
-             sizeof(yes));
+  setsockopt(sock, SOL_SOCKET, SO_REUSEADDR,
+             reinterpret_cast<const char *>(&yes), sizeof(yes));
   setsockopt(sock, SOL_SOCKET, SO_EXCLUSIVEADDRUSE,
-             reinterpret_cast<char *>(&yes), sizeof(yes));
+             reinterpret_cast<const char *>(&yes), sizeof(yes));
 #else
 #ifdef SO_REUSEPORT
-  setsockopt(sock, SOL_SOCKET, SO_REUSEPORT, reinterpret_cast<void *>(&yes),
-             sizeof(yes));
+  setsockopt(sock, SOL_SOCKET, SO_REUSEPORT,
+             reinterpret_cast<const void *>(&yes), sizeof(yes));
 #else
-  setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, reinterpret_cast<void *>(&yes),
-             sizeof(yes));
+  setsockopt(sock, SOL_SOCKET, SO_REUSEADDR,
+             reinterpret_cast<const void *>(&yes), sizeof(yes));
 #endif
 #endif
   int const size = 1048576;
@@ -1767,6 +1902,7 @@ namespace detail {
 
 std::string encode_query_param(const std::string &value);
 
+std::string encode_url(const std::string &s);
 std::string decode_url(const std::string &s, bool convert_plus_to_space);
 
 void read_file(const std::string &path, std::string &out);
@@ -1794,6 +1930,9 @@ const char *get_header_value(const Headers &headers, const std::string &key,
 std::string params_to_query_str(const Params &params);
 
 void parse_query_text(const std::string &s, Params &params);
+
+bool parse_multipart_boundary(const std::string &content_type,
+                              std::string &boundary);
 
 bool parse_range_header(const std::string &s, Ranges &ranges);
 

@@ -5,6 +5,8 @@
 #include <string>
 #include <vector>
 #include <algorithm>
+#include <lexbor/html/parser.h>
+#include <lexbor/dom/interfaces/element.h>
 #include "fs.h"
 #include "lang.h"
 
@@ -117,5 +119,26 @@ namespace Util
         time_t timeSinceEpoch = mktime(&t);
         return timeSinceEpoch;
     }
+
+    static lxb_dom_node_t *NextChildElement(lxb_dom_element_t *element)
+    {
+        lxb_dom_node_t *node = element->node.first_child;
+        while (node != nullptr && node->type != LXB_DOM_NODE_TYPE_ELEMENT)
+        {
+            node = node->next;
+        }
+        return node;
+    }
+
+    static lxb_dom_node_t *NextElement(lxb_dom_node_t *node)
+    {
+        lxb_dom_node_t *next = node->next;
+        while (next != nullptr && next->type != LXB_DOM_NODE_TYPE_ELEMENT)
+        {
+            next = next->next;
+        }
+        return next;
+    }
+
 }
 #endif

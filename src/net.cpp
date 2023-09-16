@@ -17,6 +17,7 @@
 */
 #include <vitasdk.h>
 #include <cstdlib>
+#include <cstring>
 #include "certs.h"
 
 #define VITALAUNCHER_USER_AGENT "VitaLauncher/1.00 libhttp/1.1"

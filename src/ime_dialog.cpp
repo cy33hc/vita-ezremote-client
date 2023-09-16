@@ -18,6 +18,7 @@
 
 #include <vitasdk.h>
 #include <vita2d.h>
+#include <cstring>
 #include "ime_dialog.h"
 
 static int ime_dialog_running = 0;
