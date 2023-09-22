@@ -90,8 +90,8 @@ Polish
 Portuguese_BR
 Russian
 Spanish
-Simplified Chinese
-Traditional Chinese
+Chinese_Simplified
+Chinese_Traditional
 ```
 
 The following aren't standard languages supported by the PS4, therefore requires a config file update.
