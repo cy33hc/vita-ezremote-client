@@ -198,7 +198,7 @@ namespace Lang
 				sprintf(langFile, "ux0:app/RMTCLI001/lang/Chinese_Simplified.ini");
 				break;
 			case SCE_SYSTEM_PARAM_LANG_CHINESE_T:
-				sprintf(langFile, "ux0:app/RMTCLI001/lang/Traditional Chinese.ini");
+				sprintf(langFile, "ux0:app/RMTCLI001/lang/Chinese_Traditional.ini");
 				break;
 			default:
 				sprintf(langFile, "ux0:app/RMTCLI001/lang/English.ini");
