@@ -94,7 +94,7 @@ Chinese_Simplified
 Chinese_Traditional
 ```
 
-The following aren't standard languages supported by the PS4, therefore requires a config file update.
+The following aren't standard languages supported by the VITA, therefore requires a config file update.
 ```
 Arabic
 Catalan
