@@ -157,51 +157,51 @@ namespace Lang
 		lang = Util::Trim(lang, " ");
 		if (lang.size() > 0)
 		{
-			sprintf(langFile, "ux0:app/WDVCLI001/lang/%s.ini", lang.c_str());
+			sprintf(langFile, "ux0:app/RMTCLI001/lang/%s.ini", lang.c_str());
 		}
 		else
 		{
 			switch (idx)
 			{
 			case SCE_SYSTEM_PARAM_LANG_ITALIAN:
-				sprintf(langFile, "ux0:app/WDVCLI001/lang/Italiano.ini");
+				sprintf(langFile, "ux0:app/RMTCLI001/lang/Italiano.ini");
 				break;
 			case SCE_SYSTEM_PARAM_LANG_SPANISH:
-				sprintf(langFile, "ux0:app/WDVCLI001/lang/Spanish.ini");
+				sprintf(langFile, "ux0:app/RMTCLI001/lang/Spanish.ini");
 				break;
 			case SCE_SYSTEM_PARAM_LANG_GERMAN:
-				sprintf(langFile, "ux0:app/WDVCLI001/lang/German.ini");
+				sprintf(langFile, "ux0:app/RMTCLI001/lang/German.ini");
 				break;
 			case SCE_SYSTEM_PARAM_LANG_PORTUGUESE_PT:
 			case SCE_SYSTEM_PARAM_LANG_PORTUGUESE_BR:
-				sprintf(langFile, "ux0:app/WDVCLI001/lang/Portuguese_BR.ini");
+				sprintf(langFile, "ux0:app/RMTCLI001/lang/Portuguese_BR.ini");
 				break;
 			case SCE_SYSTEM_PARAM_LANG_RUSSIAN:
-				sprintf(langFile, "ux0:app/WDVCLI001/lang/Russian.ini");
+				sprintf(langFile, "ux0:app/RMTCLI001/lang/Russian.ini");
 				break;
 			case SCE_SYSTEM_PARAM_LANG_DUTCH:
-				sprintf(langFile, "ux0:app/WDVCLI001/lang/Dutch.ini");
+				sprintf(langFile, "ux0:app/RMTCLI001/lang/Dutch.ini");
 				break;
 			case SCE_SYSTEM_PARAM_LANG_FRENCH:
-				sprintf(langFile, "ux0:app/WDVCLI001/lang/French.ini");
+				sprintf(langFile, "ux0:app/RMTCLI001/lang/French.ini");
 				break;
 			case SCE_SYSTEM_PARAM_LANG_POLISH:
-				sprintf(langFile, "ux0:app/WDVCLI001/lang/Polish.ini");
+				sprintf(langFile, "ux0:app/RMTCLI001/lang/Polish.ini");
 				break;
 			case SCE_SYSTEM_PARAM_LANG_JAPANESE:
-				sprintf(langFile, "ux0:app/WDVCLI001/lang/Japanese.ini");
+				sprintf(langFile, "ux0:app/RMTCLI001/lang/Japanese.ini");
 				break;
 			case SCE_SYSTEM_PARAM_LANG_KOREAN:
-				sprintf(langFile, "ux0:app/WDVCLI001/lang/Korean.ini");
+				sprintf(langFile, "ux0:app/RMTCLI001/lang/Korean.ini");
 				break;
 			case SCE_SYSTEM_PARAM_LANG_CHINESE_S:
-				sprintf(langFile, "ux0:app/WDVCLI001/lang/Chinese_Simplified.ini");
+				sprintf(langFile, "ux0:app/RMTCLI001/lang/Chinese_Simplified.ini");
 				break;
 			case SCE_SYSTEM_PARAM_LANG_CHINESE_T:
-				sprintf(langFile, "ux0:app/WDVCLI001/lang/Traditional Chinese.ini");
+				sprintf(langFile, "ux0:app/RMTCLI001/lang/Traditional Chinese.ini");
 				break;
 			default:
-				sprintf(langFile, "ux0:app/WDVCLI001/lang/English.ini");
+				sprintf(langFile, "ux0:app/RMTCLI001/lang/English.ini");
 				break;
 			}
 		}
