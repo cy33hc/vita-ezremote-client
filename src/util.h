@@ -109,7 +109,7 @@ namespace Util
     {
         SceDateTime dt;
         sceRtcGetCurrentClockUtc(&dt);
-        struct tm t = {0};  // Initalize to all 0's
+        struct tm t = {0}; // Initalize to all 0's
         t.tm_year = dt.year - 1900;
         t.tm_mon = dt.month - 1;
         t.tm_mday = dt.day;
@@ -118,6 +118,13 @@ namespace Util
         t.tm_sec = dt.second;
         time_t timeSinceEpoch = mktime(&t);
         return timeSinceEpoch;
+    }
+
+    static inline bool EndsWith(std::string const &value, std::string const &ending)
+    {
+        if (ending.size() > value.size())
+            return false;
+        return std::equal(ending.rbegin(), ending.rend(), value.rbegin());
     }
 
     static lxb_dom_node_t *NextChildElement(lxb_dom_element_t *element)
@@ -134,6 +141,26 @@ namespace Util
     {
         lxb_dom_node_t *next = node->next;
         while (next != nullptr && next->type != LXB_DOM_NODE_TYPE_ELEMENT)
+        {
+            next = next->next;
+        }
+        return next;
+    }
+
+    static lxb_dom_node_t *NextChildTextNode(lxb_dom_element_t *element)
+    {
+        lxb_dom_node_t *node = element->node.first_child;
+        while (node != nullptr && node->type != LXB_DOM_NODE_TYPE_TEXT)
+        {
+            node = node->next;
+        }
+        return node;
+    }
+
+    static lxb_dom_node_t *NextTextNode(lxb_dom_node_t *node)
+    {
+        lxb_dom_node_t *next = node->next;
+        while (next != nullptr && next->type != LXB_DOM_NODE_TYPE_TEXT)
         {
             next = next->next;
         }

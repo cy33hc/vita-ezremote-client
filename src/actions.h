@@ -32,7 +32,6 @@ enum ACTIONS {
     ACTION_REMOTE_CLEAR_ALL,
     ACTION_CONNECT,
     ACTION_DISCONNECT,
-    ACTION_UPDATE_SOFTWARE,
     ACTION_EXTRACT_LOCAL_ZIP,
     ACTION_CREATE_LOCAL_ZIP,
     ACTION_LOCAL_CUT,
@@ -44,7 +43,8 @@ enum ACTIONS {
     ACTION_REMOTE_PASTE,
     ACTION_REMOTE_EDIT,
     ACTION_NEW_LOCAL_FILE,
-    ACTION_NEW_REMOTE_FILE
+    ACTION_NEW_REMOTE_FILE,
+    ACTION_EXTRACT_REMOTE_ZIP,
 };
 
 enum OverWriteType {
@@ -80,6 +80,12 @@ namespace Actions {
     void Disconnect();
     void SelectAllLocalFiles();
     void SelectAllRemoteFiles();
+    void ExtractZipThread(SceSize args, void *argp);
+    void ExtractLocalZips();
+    void ExtractRemoteZipThread(SceSize args, void *argp);
+    void ExtractRemoteZips();
+    void MakeZipThread(SceSize args, void *argp);
+    void MakeLocalZip();
     void MoveLocalFilesThread(SceSize args, void *argp);
     void MoveLocalFiles();
     void CopyLocalFilesThread(SceSize args, void *argp);

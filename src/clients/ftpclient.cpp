@@ -1211,6 +1211,39 @@ int FtpClient::Rmdir(const std::string &path, bool recursive)
 	return 1;
 }
 
+int FtpClient::GetRange(const std::string &path, void *buffer, uint64_t size, uint64_t offset)
+{
+	ftphandle *nData;
+	mp_ftphandle->offset = offset;
+	if (!FtpAccess(path, FtpClient::fileread, FtpClient::transfermode::image, mp_ftphandle, &nData))
+	{
+		return 0;
+	}
+
+	char buf[8192];
+	int l = 0;
+	uint64_t remaining = size;
+	char *p = (char *)buffer;
+	while ((l = FtpRead(buf, 8192, nData)) > 0)
+	{
+		if (l <= remaining)
+		{
+			memcpy(p, buf, l);
+			p += l;
+		}
+		else
+		{
+			memcpy(p, buf, remaining);
+			break;
+		}
+		remaining -= l;
+	}
+	FtpClose(nData);
+	mp_ftphandle->offset = 0;
+
+	return 1;
+}
+
 /*
  * FtpSize - determine the size of a remote file
  *

@@ -12,7 +12,6 @@
 #define REMOTE_BROWSER 2
 
 extern int view_mode;
-extern bool handle_updates;
 extern int64_t bytes_transfered;
 extern int64_t bytes_to_download;
 extern std::vector<DirEntry> local_files;
@@ -38,6 +37,10 @@ extern int confirm_state;
 extern int overwrite_type;
 extern ACTIONS action_to_take;
 extern bool file_transfering;
+extern char extract_zip_folder[];
+extern char zip_file_path[];
+extern std::vector<std::string> edit_buffer;
+extern char zip_password[128];
 
 static ImVector<ImRect> s_GroupPanelLabelStack;
 
@@ -191,6 +194,10 @@ namespace Windows {
     void AfterFolderNameCallback(int ime_result);
     void CancelActionCallBack(int ime_result);
     void AferServerChangeCallback(int ime_result);
+    void AfterExtractFolderCallback(int ime_result);
+    void AfterExtractRemoteFolderCallback(int ime_result);
+    void AfterZipFileCallback(int ime_result);
+
 }
 
 #endif

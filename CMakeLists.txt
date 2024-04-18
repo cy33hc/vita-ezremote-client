@@ -25,10 +25,17 @@ include_directories(
 )
 
 add_executable(${PROJECT_NAME}
+  src/clients/apache.cpp
+  src/clients/baseclient.cpp
   src/clients/ftpclient.cpp
+  src/clients/iis.cpp
   src/clients/nfsclient.cpp
-  src/clients/webdavclient.cpp
+  src/clients/nginx.cpp
+  src/clients/npxserve.cpp
+  src/pugixml/pugixml.cpp
   src/clients/smbclient.cpp
+  src/clients/rclone.cpp
+  src/clients/webdav.cpp
   src/textures.cpp
   src/fs.cpp
   src/main.cpp
@@ -39,31 +46,30 @@ add_executable(${PROJECT_NAME}
   src/gui.cpp
   src/windows.cpp
   src/actions.cpp
-  src/updater.cpp
   src/lang.cpp
   src/sfo.cpp
   src/sha1.c
   src/zip.c
-  src/unzip.c
   src/ioapi.c
   src/debugScreen.c
-  src/pugixml/pugixml.cpp
-  src/webdav/callback.cpp
-  src/webdav/client.cpp
-  src/webdav/fsinfo.cpp
-  src/webdav/header.cpp
-  src/webdav/request.cpp
-  src/webdav/urn.cpp
+  src/zip_util.cpp
 )
 
 target_link_libraries(${PROJECT_NAME}
-  stdc++
+  dbglogger
   c
   imgui
   vita2d
   vitaGL
   vitashark
   mathneon
+  httpclient
+  archive
+  bz2
+  lzma
+  xml2
+  stdc++
+  lexbor_static
   png
   z
   curl
@@ -146,5 +152,6 @@ vita_create_vpk(${PROJECT_NAME}.vpk ${VITA_TITLEID} eboot.bin
   FILE lang/Thai.ini lang/Thai.ini
   FILE lang/Turkish.ini lang/Turkish.ini
   FILE lang/Roboto_ext.ttf lang/Roboto_ext.ttf
+  FILE certs/cacert.pem certs/cacert.pem
   FILE version.txt version.txt
 )

@@ -1,14 +1,21 @@
 #include <vitasdk.h>
 #include <string.h>
 #include "clients/remote_client.h"
+#include "clients/apache.h"
+#include "clients/iis.h"
+#include "clients/nginx.h"
+#include "clients/npxserve.h"
+#include "clients/rclone.h"
 #include "clients/smbclient.h"
 #include "clients/ftpclient.h"
 #include "clients/nfsclient.h"
-#include "clients/webdavclient.h"
+#include "clients/webdav.h"
 #include "config.h"
 #include "common.h"
 #include "lang.h"
 #include "util.h"
+#include "zip.h"
+#include "zip_util.h"
 #include "windows.h"
 
 namespace Actions
@@ -217,9 +224,15 @@ namespace Actions
         std::string new_name = std::string(new_path);
         new_name = Util::Rtrim(Util::Trim(new_name, " "), "/");
         std::string path = FS::GetPath(remote_directory, new_name);
-        remoteclient->Rename(old_path, path.c_str());
-        RefreshRemoteFiles(false);
-        sprintf(remote_file_to_select, "%s", new_name.c_str());
+        if (remoteclient->Rename(old_path, path.c_str()))
+        {
+            RefreshRemoteFiles(false);
+            sprintf(remote_file_to_select, "%s", new_name.c_str());
+        }
+        else
+        {
+            sprintf(status_message, "%s - %s", lang_strings[STR_FAILED], remoteclient->LastResponse());
+        }
     }
 
     int DeleteSelectedLocalFilesThread(SceSize args, void *argp)
@@ -243,7 +256,7 @@ namespace Actions
     void DeleteSelectedLocalFiles()
     {
         sprintf(activity_message, "%s", "");
-        bk_activity_thid = sceKernelCreateThread("delete_local_files_thread", (SceKernelThreadEntry)DeleteSelectedLocalFilesThread, 0x10000100, 0x4000, 0, 0, NULL);
+        bk_activity_thid = sceKernelCreateThread("delete_local_files_thread", (SceKernelThreadEntry)DeleteSelectedLocalFilesThread, 0x10000100, 0x40000, 0, 0, NULL);
         if (bk_activity_thid >= 0)
             sceKernelStartThread(bk_activity_thid, 0, NULL);
     }
@@ -287,7 +300,7 @@ namespace Actions
     void DeleteSelectedRemotesFiles()
     {
         sprintf(activity_message, "%s", "");
-        bk_activity_thid = sceKernelCreateThread("delete_remote_files_thread", (SceKernelThreadEntry)DeleteSelectedRemotesFilesThread, 0x10000100, 0x4000, 0, 0, NULL);
+        bk_activity_thid = sceKernelCreateThread("delete_remote_files_thread", (SceKernelThreadEntry)DeleteSelectedRemotesFilesThread, 0x10000100, 0x40000, 0, 0, NULL);
         if (bk_activity_thid >= 0)
             sceKernelStartThread(bk_activity_thid, 0, NULL);
     }
@@ -437,7 +450,7 @@ namespace Actions
     void UploadFiles()
     {
         sprintf(activity_message, "%s", "");
-        bk_activity_thid = sceKernelCreateThread("upload_files_thread", (SceKernelThreadEntry)UploadFilesThread, 0x10000100, 0x4000, 0, 0, NULL);
+        bk_activity_thid = sceKernelCreateThread("upload_files_thread", (SceKernelThreadEntry)UploadFilesThread, 0x10000100, 0x40000, 0, 0, NULL);
         if (bk_activity_thid >= 0)
             sceKernelStartThread(bk_activity_thid, 0, NULL);
     }
@@ -583,7 +596,7 @@ namespace Actions
     void DownloadFiles()
     {
         sprintf(activity_message, "%s", "");
-        bk_activity_thid = sceKernelCreateThread("download_files_thread", (SceKernelThreadEntry)DownloadFilesThread, 0x10000100, 0x4000, 0, 0, NULL);
+        bk_activity_thid = sceKernelCreateThread("download_files_thread", (SceKernelThreadEntry)DownloadFilesThread, 0x10000100, 0x40000, 0, 0, NULL);
         if (bk_activity_thid >= 0)
             sceKernelStartThread(bk_activity_thid, 0, NULL);
     }
@@ -614,12 +627,166 @@ namespace Actions
         return sceKernelExitDeleteThread(0);
     }
 
+    void ExtractZipThread(SceSize args, void *argp)
+    {
+        FS::MkDirs(extract_zip_folder);
+        std::vector<DirEntry> files;
+        if (multi_selected_local_files.size() > 0)
+            std::copy(multi_selected_local_files.begin(), multi_selected_local_files.end(), std::back_inserter(files));
+        else
+            files.push_back(selected_local_file);
+
+        for (std::vector<DirEntry>::iterator it = files.begin(); it != files.end(); ++it)
+        {
+            if (stop_activity)
+                break;
+            if (!it->isDir)
+            {
+                int ret = ZipUtil::Extract(*it, extract_zip_folder);
+                if (ret == 0)
+                {
+                    sprintf(status_message, "%s %s", lang_strings[STR_FAILED_TO_EXTRACT], it->name);
+                    sceKernelDelayThread(100000);
+                }
+            }
+        }
+        activity_inprogess = false;
+        multi_selected_local_files.clear();
+        Windows::SetModalMode(false);
+        selected_action = ACTION_REFRESH_LOCAL_FILES;
+        return sceKernelExitDeleteThread(0);
+    }
+
+    void ExtractLocalZips()
+    {
+        sprintf(status_message, "%s", "");
+        bk_activity_thid = sceKernelCreateThread("extract_local_zips", (SceKernelThreadEntry)ExtractZipThread, 0x10000100, 0x40000, 0, 0, NULL);
+        if (bk_activity_thid >= 0)
+            sceKernelStartThread(bk_activity_thid, 0, NULL);
+        else
+        {
+            file_transfering = false;
+            activity_inprogess = false;
+            multi_selected_local_files.clear();
+            Windows::SetModalMode(false);
+        }
+        snprintf(status_message, 1023, "%s", "");
+    }
+
+    void ExtractRemoteZipThread(SceSize args, void *argp)
+    {
+        FS::MkDirs(extract_zip_folder);
+        std::vector<DirEntry> files;
+        if (multi_selected_remote_files.size() > 0)
+            std::copy(multi_selected_remote_files.begin(), multi_selected_remote_files.end(), std::back_inserter(files));
+        else
+            files.push_back(selected_remote_file);
+
+        for (std::vector<DirEntry>::iterator it = files.begin(); it != files.end(); ++it)
+        {
+            if (stop_activity)
+                break;
+            if (!it->isDir)
+            {
+                int ret = ZipUtil::Extract(*it, extract_zip_folder, remoteclient);
+                if (ret == 0)
+                {
+                    sprintf(status_message, "%s %s", lang_strings[STR_FAILED_TO_EXTRACT], it->name);
+                    sceKernelDelayThread(100000);
+                }
+            }
+        }
+        activity_inprogess = false;
+        multi_selected_remote_files.clear();
+        Windows::SetModalMode(false);
+        selected_action = ACTION_REFRESH_LOCAL_FILES;
+        return sceKernelExitDeleteThread(0);
+    }
+
+    void ExtractRemoteZips()
+    {
+        sprintf(status_message, "%s", "");
+        bk_activity_thid = sceKernelCreateThread("extract_remote_zips", (SceKernelThreadEntry)ExtractRemoteZipThread, 0x10000100, 0x40000, 0, 0, NULL);
+        if (bk_activity_thid >= 0)
+            sceKernelStartThread(bk_activity_thid, 0, NULL);
+        else
+        {
+            file_transfering = false;
+            activity_inprogess = false;
+            multi_selected_remote_files.clear();
+            Windows::SetModalMode(false);
+        }
+    }
+
+    void MakeZipThread(SceSize args, void *argp)
+    {
+        zipFile zf = zipOpen64(zip_file_path, APPEND_STATUS_CREATE);
+        if (zf != NULL)
+        {
+            std::vector<DirEntry> files;
+            if (multi_selected_local_files.size() > 0)
+                std::copy(multi_selected_local_files.begin(), multi_selected_local_files.end(), std::back_inserter(files));
+            else
+                files.push_back(selected_local_file);
+
+            for (std::vector<DirEntry>::iterator it = files.begin(); it != files.end(); ++it)
+            {
+                if (stop_activity)
+                    break;
+                int res = ZipUtil::ZipAddPath(zf, it->path, strlen(it->directory) + 1, Z_DEFAULT_COMPRESSION);
+                if (res <= 0)
+                {
+                    sprintf(status_message, "%s", lang_strings[STR_ERROR_CREATE_ZIP]);
+                    sceKernelDelayThread(1000000);
+                }
+            }
+            zipClose(zf, NULL);
+        }
+        else
+        {
+            sprintf(status_message, "%s", lang_strings[STR_ERROR_CREATE_ZIP]);
+        }
+        activity_inprogess = false;
+        multi_selected_local_files.clear();
+        Windows::SetModalMode(false);
+        selected_action = ACTION_REFRESH_LOCAL_FILES;
+        return sceKernelExitDeleteThread(0);
+    }
+
+    void MakeLocalZip()
+    {
+        sprintf(status_message, "%s", "");
+        bk_activity_thid = sceKernelCreateThread("make_local_zips", (SceKernelThreadEntry)MakeZipThread, 0x10000100, 0x40000, 0, 0, NULL);
+        if (bk_activity_thid >= 0)
+            sceKernelStartThread(bk_activity_thid, 0, NULL);
+        else
+        {
+            file_transfering = false;
+            activity_inprogess = false;
+            multi_selected_local_files.clear();
+            Windows::SetModalMode(false);
+        }
+    }
+
     void Connect()
     {
         CONFIG::SaveConfig();
         if (strncmp(remote_settings->server, "webdavs://", 10) == 0 || strncmp(remote_settings->server, "webdav://", 9) == 0)
         {
-            remoteclient = new WebDAV::WebDavClient();
+            remoteclient = new WebDAVClient();
+        }
+        else if (strncmp(remote_settings->server, "https://", 8) == 0 || strncmp(remote_settings->server, "http://", 7) == 0)
+        {
+            if (strcmp(remote_settings->http_server_type, HTTP_SERVER_APACHE) == 0)
+                remoteclient = new ApacheClient();
+            else if (strcmp(remote_settings->http_server_type, HTTP_SERVER_MS_IIS) == 0)
+                remoteclient = new IISClient();
+            else if (strcmp(remote_settings->http_server_type, HTTP_SERVER_NGINX) == 0)
+                remoteclient = new NginxClient();
+            else if (strcmp(remote_settings->http_server_type, HTTP_SERVER_NPX_SERVE) == 0)
+                remoteclient = new NpxServeClient();
+            else if (strcmp(remote_settings->http_server_type, HTTP_SERVER_RCLONE) == 0)
+                remoteclient = new RCloneClient();
         }
         else if (strncmp(remote_settings->server, "smb://", 6) == 0)
         {
@@ -651,7 +818,7 @@ namespace Actions
 
             if (remoteclient->clientType() == CLIENT_TYPE_FTP)
             {
-                ftp_keep_alive_thid = sceKernelCreateThread("ftp_keep_alive_thread", (SceKernelThreadEntry)KeepAliveThread, 0x10000100, 0x4000, 0, 0, NULL);
+                ftp_keep_alive_thid = sceKernelCreateThread("ftp_keep_alive_thread", (SceKernelThreadEntry)KeepAliveThread, 0x10000100, 0x40000, 0, 0, NULL);
                 if (ftp_keep_alive_thid >= 0)
                     sceKernelStartThread(ftp_keep_alive_thid, 0, NULL);
             }
@@ -844,7 +1011,7 @@ namespace Actions
     void MoveLocalFiles()
     {
         snprintf(status_message, 1023, "%s", "");
-        bk_activity_thid = sceKernelCreateThread("move_local_files", (SceKernelThreadEntry)MoveLocalFilesThread, 0x10000100, 0x4000, 0, 0, NULL);
+        bk_activity_thid = sceKernelCreateThread("move_local_files", (SceKernelThreadEntry)MoveLocalFilesThread, 0x10000100, 0x40000, 0, 0, NULL);
         if (bk_activity_thid >= 0)
             sceKernelStartThread(bk_activity_thid, 0, NULL);
         else
@@ -894,7 +1061,7 @@ namespace Actions
     void CopyLocalFiles()
     {
         snprintf(status_message, 1023, "%s", "");
-        bk_activity_thid = sceKernelCreateThread("copy_local_files", (SceKernelThreadEntry)CopyLocalFilesThread, 0x10000100, 0x4000, 0, 0, NULL);
+        bk_activity_thid = sceKernelCreateThread("copy_local_files", (SceKernelThreadEntry)CopyLocalFilesThread, 0x10000100, 0x40000, 0, 0, NULL);
         if (bk_activity_thid >= 0)
             sceKernelStartThread(bk_activity_thid, 0, NULL);
         else
@@ -980,7 +1147,7 @@ namespace Actions
     void MoveRemoteFiles()
     {
         snprintf(status_message, 1023, "%s", "");
-        bk_activity_thid = sceKernelCreateThread("move_remote_files", (SceKernelThreadEntry)MoveRemoteFilesThread, 0x10000100, 0x4000, 0, 0, NULL);
+        bk_activity_thid = sceKernelCreateThread("move_remote_files", (SceKernelThreadEntry)MoveRemoteFilesThread, 0x10000100, 0x40000, 0, 0, NULL);
         if (bk_activity_thid >= 0)
             sceKernelStartThread(bk_activity_thid, 0, NULL);
         else
@@ -1101,7 +1268,7 @@ namespace Actions
     void CopyRemoteFiles()
     {
         snprintf(status_message, 1023, "%s", "");
-        bk_activity_thid = sceKernelCreateThread("copy_remote_files", (SceKernelThreadEntry)CopyRemoteFilesThread, 0x10000100, 0x4000, 0, 0, NULL);
+        bk_activity_thid = sceKernelCreateThread("copy_remote_files", (SceKernelThreadEntry)CopyRemoteFilesThread, 0x10000100, 0x40000, 0, 0, NULL);
         if (bk_activity_thid >= 0)
             sceKernelStartThread(bk_activity_thid, 0, NULL);
         else

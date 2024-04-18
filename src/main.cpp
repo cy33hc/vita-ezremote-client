@@ -18,7 +18,7 @@
 #include "lang.h"
 #include "util.h"
 #include "debugScreen.h"
-//#include "debugnet.h"
+#include "dbglogger.h"
 
 int console_language;
 namespace Services
@@ -340,8 +340,9 @@ unsigned int _newlib_heap_size_user = 190 * 1024 * 1024;
 
 int main(int, char **)
 {
-	//debugNetInit(ip_server,port_server, DEBUG);
-	//debugNetPrintf(DEBUG, "Test message\n");
+	dbglogger_init();
+	dbglogger_log("If you see this you've set up dbglogger correctly.");
+
 	if (!FS::FileExists("ur0:/data/libshacccg.suprx") && !FS::FileExists("ur0:/data/external/libshacccg.suprx"))
 	{
 		psvDebugScreenInit();
