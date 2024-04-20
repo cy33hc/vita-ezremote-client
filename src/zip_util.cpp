@@ -9,6 +9,7 @@
 #include <archive.h>
 #include <archive_entry.h>
 #include "clients/remote_client.h"
+#include "clients/ftpclient.h"
 #include "config.h"
 #include "common.h"
 #include "fs.h"
@@ -24,6 +25,7 @@
 namespace ZipUtil
 {
     static char filename_extracted[256];
+    static FtpCallbackXfer ftp_xfer_callbak;
 
     void convertToZipTime(time_t time, tm_zip *tmzip)
     {
@@ -175,7 +177,7 @@ namespace ZipUtil
                 dirent = readdir(dfd);
                 if (stop_activity)
                     return 1;
-                    
+
                 if (dirent != NULL && strcmp(dirent->d_name, ".") != 0 && strcmp(dirent->d_name, "..") != 0)
                 {
                     int new_path_length = path.length() + strlen(dirent->d_name) + 2;
@@ -306,7 +308,7 @@ namespace ZipUtil
             bytes_transfered = current_progress;
 
             write_len = FS::Write(fd, buffer, len);
-            if ( write_len != len)
+            if (write_len != len)
             {
                 sprintf(status_message, "error write('%s')", pathname.c_str());
                 free(buffer);
@@ -415,6 +417,13 @@ namespace ZipUtil
         client->Size(file, &data->size);
         data->client = client;
         data->path = file;
+
+        if (client->clientType() == CLIENT_TYPE_FTP)
+        {
+            FtpClient *_client = (FtpClient *)client;
+            data->ftp_xfer_callbak = _client->GetCallbackXferFunction();
+            _client->SetCallbackXferFunction(nullptr);
+        }
         return data;
     }
 
@@ -443,7 +452,17 @@ namespace ZipUtil
     static int CloseRemoteArchive(struct archive *a, void *client_data)
     {
         if (client_data != nullptr)
+        {
+            RemoteArchiveData *data;
+            data = (RemoteArchiveData *)client_data;
+            if (data->client->clientType() == CLIENT_TYPE_FTP)
+            {
+                FtpClient *_client = (FtpClient *)data->client;
+                _client->SetCallbackXferFunction(data->ftp_xfer_callbak);
+            }
+            
             free(client_data);
+        }
         return 0;
     }
 

@@ -91,6 +91,7 @@ public:
 	std::vector<std::string> ListFiles(const std::string &path, bool includeSubDir = false);
 	std::vector<DirEntry> ListDir(const std::string &path);
 	void SetCallbackXferFunction(FtpCallbackXfer pointer);
+	FtpCallbackXfer GetCallbackXferFunction();
 	void SetCallbackArg(void *arg);
 	void SetCallbackBytes(int64_t bytes);
 	bool Noop();

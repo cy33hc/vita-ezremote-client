@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <archive.h>
 #include <archive_entry.h>
+#include "clients/ftpclient.h"
 #include "common.h"
 #include "fs.h"
 #include "zip.h"
@@ -34,6 +35,7 @@ struct RemoteArchiveData
     uint64_t offset;
     uint8_t buf[ARCHIVE_TRANSFER_SIZE];
     int buf_ref;
+    FtpCallbackXfer ftp_xfer_callbak;
     RemoteClient *client;
 };
 
