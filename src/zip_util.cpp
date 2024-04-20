@@ -175,6 +175,7 @@ namespace ZipUtil
                 dirent = readdir(dfd);
                 if (stop_activity)
                     return 1;
+                    
                 if (dirent != NULL && strcmp(dirent->d_name, ".") != 0 && strcmp(dirent->d_name, "..") != 0)
                 {
                     int new_path_length = path.length() + strlen(dirent->d_name) + 2;
@@ -263,7 +264,7 @@ namespace ZipUtil
     /*
      * Extract a directory.
      */
-    static void extract_dir(struct archive *a, struct archive_entry *e, const std::string &path)
+    void extract_dir(struct archive *a, struct archive_entry *e, const std::string &path)
     {
         int mode;
 
@@ -277,13 +278,14 @@ namespace ZipUtil
     /*
      * Extract to a file descriptor
      */
-    static int extract2fd(struct archive *a, const std::string &pathname, FILE *fd)
+    int extract2fd(struct archive *a, const std::string &pathname, void *fd)
     {
-        ssize_t len;
+        uint32_t write_len;
+        ssize_t len = 0;
         unsigned char *buffer = (unsigned char *)malloc(ARCHIVE_TRANSFER_SIZE);
-        bytes_transfered = 0;
 
         /* loop over file contents and write to fd */
+        bytes_transfered = 0;
         for (int n = 0;; n++)
         {
             len = archive_read_data(a, buffer, ARCHIVE_TRANSFER_SIZE);
@@ -302,7 +304,8 @@ namespace ZipUtil
             }
             bytes_transfered += len;
 
-            if (fwrite(buffer, 1, len, fd) != len)
+            write_len = FS::Write(fd, buffer, len);
+            if ( write_len != len)
             {
                 sprintf(status_message, "error write('%s')", pathname.c_str());
                 free(buffer);
@@ -317,10 +320,10 @@ namespace ZipUtil
     /*
      * Extract a regular file.
      */
-    static void extract_file(struct archive *a, struct archive_entry *e, const std::string &path)
+    void extract_file(struct archive *a, struct archive_entry *e, const std::string &path)
     {
         struct stat sb;
-        FILE *fd;
+        void *fd;
         const char *linkname;
 
         /* look for existing file of same name */
@@ -339,7 +342,8 @@ namespace ZipUtil
         }
 
         bytes_to_download = archive_entry_size(e);
-        if ((fd = fopen(path.c_str(), "wb+")) < 0)
+        bytes_transfered = 0;
+        if ((fd = FS::Create(path.c_str())) == nullptr)
         {
             sprintf(status_message, "error open('%s')", path.c_str());
             return;
@@ -348,13 +352,10 @@ namespace ZipUtil
         extract2fd(a, path, fd);
 
         /* set access and modification time */
-        if (fclose(fd) != 0)
-        {
-            return;
-        }
+        FS::Close(fd);
     }
 
-    static void extract(struct archive *a, struct archive_entry *e, const std::string &base_dir)
+    void extract(struct archive *a, struct archive_entry *e, const std::string &base_dir)
     {
         char *pathname, *realpathname;
         mode_t filetype;
@@ -454,7 +455,6 @@ namespace ZipUtil
         struct archive_entry *e;
         RemoteArchiveData *client_data = nullptr;
         int ret;
-        uintmax_t total_size, file_count, error_count;
 
         if ((a = archive_read_new()) == NULL)
         {
@@ -489,6 +489,13 @@ namespace ZipUtil
                 sprintf(status_message, "archive_read_open failed - %s", archive_error_string(a));
                 return 0;
             }
+
+            /* ret = archive_read_set_seek_callback(a, SeekRemoteArchive);
+            if (ret < ARCHIVE_OK)
+            {
+                sprintf(status_message, "archive_read_set_seek_callback failed - %s", archive_error_string(a));
+                return 0;
+            } */
         }
 
         for (;;)
@@ -515,4 +522,74 @@ namespace ZipUtil
         return 1;
     }
 
+    bool ContainsFiles(const DirEntry &file, std::vector<std::string> &file_list, RemoteClient *client)
+    {
+        struct archive *a;
+        struct archive_entry *e;
+        RemoteArchiveData *client_data = nullptr;
+        int should_match = file_list.size();
+        int ret;
+
+        if ((a = archive_read_new()) == NULL)
+        {
+            sprintf(status_message, "%s", "archive_read_new failed");
+            return false;
+        }
+
+        archive_read_support_format_all(a);
+        archive_read_support_filter_all(a);
+
+        if (client == nullptr)
+        {
+            ret = archive_read_open_filename(a, file.path, ARCHIVE_TRANSFER_SIZE);
+            if (ret < ARCHIVE_OK)
+            {
+                sprintf(status_message, "%s", "archive_read_open_filename failed");
+                return false;
+            }
+        }
+        else
+        {
+            client_data = OpenRemoteArchive(file.path, client);
+            if (client_data == nullptr)
+            {
+                sprintf(status_message, "%s", "archive_read_open_filename failed");
+                return false;
+            }
+
+            ret = archive_read_open(a, client_data, NULL, ReadRemoteArchive, CloseRemoteArchive);
+            if (ret < ARCHIVE_OK)
+            {
+                sprintf(status_message, "archive_read_open failed - %s", archive_error_string(a));
+                return false;
+            }
+        }
+
+        for (;;)
+        {
+            ret = archive_read_next_header(a, &e);
+            if (ret < ARCHIVE_OK)
+            {
+                sprintf(status_message, "%s", "archive_read_next_header failed");
+                archive_read_free(a);
+                break;
+            }
+
+            if (ret == ARCHIVE_EOF)
+                break;
+
+            std::string filename = std::string(archive_entry_pathname(e));
+            if (Util::Contains(file_list, filename, true))
+                should_match--;
+
+            if (should_match == 0)
+                break;
+
+            archive_read_data_skip(a);
+        }
+
+        archive_read_free(a);
+
+        return should_match == 0;
+    }
 }

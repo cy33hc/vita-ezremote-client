@@ -35,8 +35,8 @@ static int ime_field_size;
 
 float previous_right = 0.0f;
 float previous_left = 0.0f;
-int64_t bytes_transfered = 0;
-int64_t bytes_to_download;
+uint64_t bytes_transfered = 0;
+uint64_t bytes_to_download;
 std::vector<DirEntry> local_files;
 std::vector<DirEntry> remote_files;
 std::set<DirEntry> multi_selected_local_files;
@@ -1021,6 +1021,18 @@ namespace Windows
                 ImGui::Separator();
             }
 
+            ImGui::PushID("Install##settings");
+            if (ImGui::Selectable(lang_strings[STR_INSTALL], false, ImGuiSelectableFlags_DontClosePopups, ImVec2(220, 0)))
+            {
+                SetModalMode(false);
+                selected_action = ACTION_INSTALL_LOCAL_PKG;
+                if (remote_browser_selected)
+                    selected_action = ACTION_INSTALL_REMOTE_PKG;
+                ImGui::CloseCurrentPopup();
+            }
+            ImGui::PopID();
+            ImGui::Separator();
+
             if (remote_browser_selected)
             {
                 ImGui::PushID("Download##settings");
@@ -1440,6 +1452,27 @@ namespace Windows
         case ACTION_DISCONNECT:
             sprintf(status_message, "%s", "");
             Actions::Disconnect();
+            break;
+        case ACTION_DISCONNECT_AND_EXIT:
+            done = true;
+            break;
+        case ACTION_INSTALL_REMOTE_PKG:
+            sprintf(status_message, "%s", "");
+            activity_inprogess = true;
+            file_transfering = true;
+            sprintf(activity_message, "%s", "");
+            stop_activity = false;
+            Actions::InstallRemotePkgs();
+            selected_action = ACTION_NONE;
+            break;
+        case ACTION_INSTALL_LOCAL_PKG:
+            activity_inprogess = true;
+            file_transfering = true;
+            sprintf(status_message, "%s", "");
+            sprintf(activity_message, "%s", "");
+            stop_activity = false;
+            Actions::InstallLocalPkgs();
+            selected_action = ACTION_NONE;
             break;
         case ACTION_LOCAL_CUT:
         case ACTION_LOCAL_COPY:

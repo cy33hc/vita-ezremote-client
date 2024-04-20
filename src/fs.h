@@ -43,8 +43,8 @@ namespace FS {
     void Close(void* f);
 
     int64_t Seek(void* f, uint64_t offset);
-    int Read(void* f, void* buffer, uint32_t size);
-    int Write(void* f, const void* buffer, uint32_t size);
+    uint32_t Read(void* f, void* buffer, uint32_t size);
+    uint32_t Write(void* f, const void* buffer, uint32_t size);
 
     std::vector<char> Load(const std::string& path);
     void Save(const std::string& path, const void* data, uint32_t size);

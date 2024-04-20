@@ -6,6 +6,7 @@
 #define GUI_MODE_BROWSER 0
 #define GUI_MODE_IME 1
 
+extern bool done;
 extern int gui_mode;
 
 namespace GUI {

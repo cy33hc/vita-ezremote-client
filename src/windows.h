@@ -12,8 +12,8 @@
 #define REMOTE_BROWSER 2
 
 extern int view_mode;
-extern int64_t bytes_transfered;
-extern int64_t bytes_to_download;
+extern uint64_t bytes_transfered;
+extern uint64_t bytes_to_download;
 extern std::vector<DirEntry> local_files;
 extern std::vector<DirEntry> remote_files;
 extern std::set<DirEntry> multi_selected_local_files;

@@ -308,7 +308,6 @@ namespace Services
 		scePowerSetGpuXbarClockFrequency(166);
 		scePowerSetGpuClockFrequency(222);
 
-		// Allow writing to ux0:app/VITASHELL
 		sceAppMgrUmount("app0:");
 		sceAppMgrUmount("savedata0:");
 
@@ -332,9 +331,6 @@ namespace Services
 		vita2d_fini();
 	}
 } // namespace Services
-
-#define ip_server "192.168.100.60"
-#define port_server 18194
 
 unsigned int _newlib_heap_size_user = 190 * 1024 * 1024;
 

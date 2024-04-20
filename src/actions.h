@@ -32,6 +32,9 @@ enum ACTIONS {
     ACTION_REMOTE_CLEAR_ALL,
     ACTION_CONNECT,
     ACTION_DISCONNECT,
+    ACTION_DISCONNECT_AND_EXIT,
+    ACTION_INSTALL_REMOTE_PKG,
+    ACTION_INSTALL_LOCAL_PKG,
     ACTION_EXTRACT_LOCAL_ZIP,
     ACTION_CREATE_LOCAL_ZIP,
     ACTION_LOCAL_CUT,
@@ -75,6 +78,7 @@ namespace Actions {
     int UploadFilesThread(SceSize args, void *argp);
     void UploadFiles();
     int  DownloadFilesThread(SceSize args, void *argp);
+    int Download(const DirEntry &src, const char *dest);
     void DownloadFiles();
     void Connect();
     void Disconnect();
@@ -86,6 +90,10 @@ namespace Actions {
     void ExtractRemoteZips();
     void MakeZipThread(SceSize args, void *argp);
     void MakeLocalZip();
+    void InstallRemotePkgsThread(SceSize args, void *argp);
+    void InstallRemotePkgs();
+    void InstallLocalPkgsThread(SceSize args, void *argp);
+    void InstallLocalPkgs();
     void MoveLocalFilesThread(SceSize args, void *argp);
     void MoveLocalFiles();
     void CopyLocalFilesThread(SceSize args, void *argp);

@@ -117,13 +117,13 @@ namespace FS
         return pos;
     }
 
-    int Read(void *f, void *buffer, uint32_t size)
+    uint32_t Read(void *f, void *buffer, uint32_t size)
     {
         const auto read = sceIoRead((SceUID)(intptr_t)f, buffer, size);
         return read;
     }
 
-    int Write(void *f, const void *buffer, uint32_t size)
+    uint32_t Write(void *f, const void *buffer, uint32_t size)
     {
         int write = sceIoWrite((SceUID)(intptr_t)f, buffer, size);
         return write;

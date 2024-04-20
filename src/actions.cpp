@@ -13,6 +13,7 @@
 #include "config.h"
 #include "common.h"
 #include "lang.h"
+#include "installer.h"
 #include "util.h"
 #include "zip.h"
 #include "zip_util.h"
@@ -767,6 +768,114 @@ namespace Actions
             Windows::SetModalMode(false);
         }
     }
+
+    void InstallRemotePkgsThread(SceSize args, void *argp)
+    {
+        int failed = 0;
+        int success = 0;
+        int skipped = 0;
+
+        std::vector<DirEntry> files;
+        if (multi_selected_remote_files.size() > 0)
+            std::copy(multi_selected_remote_files.begin(), multi_selected_remote_files.end(), std::back_inserter(files));
+        else
+            files.push_back(selected_remote_file);
+       
+        for (std::vector<DirEntry>::iterator it = files.begin(); it != files.end(); ++it)
+        {
+            if (stop_activity)
+                break;
+
+            sprintf(activity_message, "%s %s", lang_strings[STR_INSTALLING], it->name);
+
+            if (Installer::IsValidPackage(*it, remoteclient))
+            {
+                Installer::InstallPackage(*it, remoteclient);
+                success++;
+            }
+            else
+                skipped++;
+
+            sprintf(status_message, "%s %s = %d, %s = %d, %s = %d", lang_strings[STR_INSTALL],
+                    lang_strings[STR_INSTALL_SUCCESS], success, lang_strings[STR_INSTALL_FAILED], failed,
+                    lang_strings[STR_INSTALL_SKIPPED], skipped);
+        }
+
+        activity_inprogess = false;
+        multi_selected_remote_files.clear();
+        Windows::SetModalMode(false);
+        return NULL;
+    }
+
+    void InstallRemotePkgs()
+    {
+        sprintf(status_message, "%s", "");
+        bk_activity_thid = sceKernelCreateThread("InstallRemotePkgs", (SceKernelThreadEntry)InstallRemotePkgsThread, 0x10000100, 0x40000, 0, 0, NULL);
+        if (bk_activity_thid >= 0)
+            sceKernelStartThread(bk_activity_thid, 0, NULL);
+        else
+        {
+            activity_inprogess = false;
+            file_transfering = false;
+            multi_selected_remote_files.clear();
+            Windows::SetModalMode(false);
+        }
+   }
+
+    void InstallLocalPkgsThread(SceSize args, void *argp)
+    {
+        int failed = 0;
+        int success = 0;
+        int skipped = 0;
+
+        std::vector<DirEntry> files;
+        if (multi_selected_local_files.size() > 0)
+            std::copy(multi_selected_local_files.begin(), multi_selected_local_files.end(), std::back_inserter(files));
+        else
+            files.push_back(selected_local_file);
+       
+        for (std::vector<DirEntry>::iterator it = files.begin(); it != files.end(); ++it)
+        {
+            if (stop_activity)
+                break;
+
+            sprintf(activity_message, "%s %s", lang_strings[STR_INSTALLING], it->name);
+
+            if ((strncmp(it->path, "ux0:app/", 8)!=0 && strncmp(it->path, "ux0:/app/", 9)!=0) && Installer::IsValidPackage(*it))
+            {
+                if (Installer::InstallPackage(*it) == 0)
+                    success++;
+                else
+                    failed++;
+            }
+            else
+                skipped++;
+
+            sprintf(status_message, "%s %s = %d, %s = %d, %s = %d", lang_strings[STR_INSTALL],
+                    lang_strings[STR_INSTALL_SUCCESS], success, lang_strings[STR_INSTALL_FAILED], failed,
+                    lang_strings[STR_INSTALL_SKIPPED], skipped);
+        }
+
+        activity_inprogess = false;
+        multi_selected_remote_files.clear();
+        Windows::SetModalMode(false);
+        return NULL;
+    }
+
+    void InstallLocalPkgs()
+    {
+        sprintf(status_message, "%s", "");
+        bk_activity_thid = sceKernelCreateThread("InstallLocalPkgs", (SceKernelThreadEntry)InstallLocalPkgsThread, 0x10000100, 0x40000, 0, 0, NULL);
+        if (bk_activity_thid >= 0)
+            sceKernelStartThread(bk_activity_thid, 0, NULL);
+        else
+        {
+            activity_inprogess = false;
+            file_transfering = false;
+            multi_selected_remote_files.clear();
+            Windows::SetModalMode(false);
+        }
+   }
 
     void Connect()
     {

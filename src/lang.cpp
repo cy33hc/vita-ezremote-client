@@ -142,6 +142,7 @@ char lang_strings[LANG_STRINGS_NUM][LANG_STR_SIZE] = {
 	"NFS export path missing in URL",														// STR_NFS_EXP_PATH_MISSING_MSG
 	"Failed to init NFS context",															// STR_FAIL_INIT_NFS_CONTEXT
 	"Failed to mount NFS share",															// STR_FAIL_MOUNT_NFS_MSG
+	"Promoting",                                                                            // STR_PROMOTING
 };
 
 bool needs_extended_font = false;

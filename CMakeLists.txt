@@ -44,6 +44,7 @@ add_executable(${PROJECT_NAME}
   src/ime_dialog.cpp
   src/net.cpp
   src/gui.cpp
+  src/installer.cpp
   src/windows.cpp
   src/actions.cpp
   src/lang.cpp

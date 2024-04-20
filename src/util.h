@@ -41,6 +41,21 @@ namespace Util
         }
     }
 
+    static inline bool Contains(const std::vector<std::string> &list, const std::string &val, bool partial_match = false)
+    {
+        if (!partial_match)
+            return std::find(list.begin(), list.end(), val) != list.end();
+        else
+        {
+            for (int i=0; i < list.size(); i++)
+            {
+                if (val.find(list[i]) != std::string::npos)
+                    return true;
+            }
+        }
+        return false;
+    }
+
     static inline std::string ToLower(std::string s)
     {
         std::transform(s.begin(), s.end(), s.begin(),

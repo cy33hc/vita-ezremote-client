@@ -7,6 +7,7 @@
 #include <archive_entry.h>
 #include "common.h"
 #include "fs.h"
+#include "zip.h"
 
 #define ARCHIVE_TRANSFER_SIZE 512000
 
@@ -32,6 +33,7 @@ struct RemoteArchiveData
     uint64_t size;
     uint64_t offset;
     uint8_t buf[ARCHIVE_TRANSFER_SIZE];
+    int buf_ref;
     RemoteClient *client;
 };
 
@@ -39,5 +41,6 @@ namespace ZipUtil
 {
     int ZipAddPath(zipFile zf, const std::string &path, int filename_start, int level);
     int Extract(const DirEntry &file, const std::string &dir, RemoteClient *client = nullptr);
+    bool ContainsFiles(const DirEntry &file, std::vector<std::string> &file_list, RemoteClient *client = nullptr);
 }
 #endif

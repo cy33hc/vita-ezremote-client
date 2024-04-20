@@ -19,7 +19,7 @@ BaseClient::~BaseClient()
 int BaseClient::DownloadProgressCallback(void* ptr, double dTotalToDownload, double dNowDownloaded, double dTotalToUpload, double dNowUploaded)
 {
     CHTTPClient::ProgressFnStruct *progress_data = (CHTTPClient::ProgressFnStruct*) ptr;
-    int64_t *bytes_transfered = (int64_t *) progress_data->pOwner;
+    uint64_t *bytes_transfered = (uint64_t *) progress_data->pOwner;
 	*bytes_transfered = dNowDownloaded;
     return 0;
 }
@@ -27,7 +27,7 @@ int BaseClient::DownloadProgressCallback(void* ptr, double dTotalToDownload, dou
 int BaseClient::UploadProgressCallback(void* ptr, double dTotalToDownload, double dNowDownloaded, double dTotalToUpload, double dNowUploaded)
 {
     CHTTPClient::ProgressFnStruct *progress_data = (CHTTPClient::ProgressFnStruct*) ptr;
-    int64_t *bytes_transfered = (int64_t *) progress_data->pOwner;
+    uint64_t *bytes_transfered = (uint64_t *) progress_data->pOwner;
     *bytes_transfered = dNowUploaded;
     return 0;
 }
