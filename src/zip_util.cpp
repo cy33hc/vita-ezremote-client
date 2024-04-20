@@ -281,11 +281,11 @@ namespace ZipUtil
     int extract2fd(struct archive *a, const std::string &pathname, void *fd)
     {
         uint32_t write_len;
+        uint32_t current_progress = 0;
         ssize_t len = 0;
         unsigned char *buffer = (unsigned char *)malloc(ARCHIVE_TRANSFER_SIZE);
 
         /* loop over file contents and write to fd */
-        bytes_transfered = 0;
         for (int n = 0;; n++)
         {
             len = archive_read_data(a, buffer, ARCHIVE_TRANSFER_SIZE);
@@ -302,7 +302,8 @@ namespace ZipUtil
                 free(buffer);
                 return 0;
             }
-            bytes_transfered += len;
+            current_progress += len;
+            bytes_transfered = current_progress;
 
             write_len = FS::Write(fd, buffer, len);
             if ( write_len != len)
@@ -342,7 +343,6 @@ namespace ZipUtil
         }
 
         bytes_to_download = archive_entry_size(e);
-        bytes_transfered = 0;
         if ((fd = FS::Create(path.c_str())) == nullptr)
         {
             sprintf(status_message, "error open('%s')", path.c_str());
@@ -395,6 +395,8 @@ namespace ZipUtil
         else
         {
             snprintf(activity_message, 255, "%s: %s", lang_strings[STR_EXTRACTING], pathname);
+            bytes_transfered = 0;
+
             extract_file(a, e, realpathname);
         }
 

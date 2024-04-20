@@ -4,13 +4,12 @@
 #include <psp2/io/fcntl.h>
 #include <psp2/io/stat.h>
 #include <psp2/net/net.h>
+#include <algorithm>
 #include "string.h"
 #include "stdio.h"
 #include "util.h"
 #include "windows.h"
 #include "lang.h"
-
-#include <algorithm>
 
 #define ERRNO_EEXIST (int)(0x80010000 + SCE_NET_EEXIST)
 #define ERRNO_ENOENT (int)(0x80010000 + SCE_NET_ENOENT)
@@ -524,11 +523,20 @@ namespace FS
 
     bool Move(const std::string &from, const std::string &to)
     {
-        bool res = Copy(from, to);
-        if (res)
-            Rm(from);
+        std::string device_from = from.substr(0, from.find_first_of(":"));
+        std::string device_to = to.substr(0, to.find_first_of(":"));
+        if (device_from.compare(device_to) == 0)
+        {
+            Rename(from, to);
+        }
         else
-            return res;
+        {
+            bool res = Copy(from, to);
+            if (res)
+                Rm(from);
+            else
+                return res;
+        }
 
         return true;
     }

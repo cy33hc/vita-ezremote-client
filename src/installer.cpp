@@ -7,13 +7,36 @@
 #include "util.h"
 #include "dbglogger.h"
 
-extern "C" {
-	#include "inifile.h"
+extern "C"
+{
+#include "inifile.h"
 }
 
 char updater_message[256];
 
-namespace Installer {
+namespace Installer
+{
+    static int loadScePaf()
+    {
+        static int32_t argp[] = {0x180000, -1, -1, 1, -1, -1};
+
+        int result = -1;
+
+        int buf[4];
+        buf[0] = sizeof(buf);
+        buf[1] = (uint32_t)&result;
+        buf[2] = -1;
+        buf[3] = -1;
+
+        return sceSysmoduleLoadModuleInternalWithArg(SCE_SYSMODULE_INTERNAL_PAF, sizeof(argp), argp, (SceSysmoduleOpt*)buf);
+    }
+
+    static int unloadScePaf()
+    {
+        uint32_t buf = 0;
+        return sceSysmoduleUnloadModuleInternalWithArg(SCE_SYSMODULE_INTERNAL_PAF, 0, NULL, (SceSysmoduleOpt*)buf);
+    }
+
     static void fpkg_hmac(const uint8_t *data, unsigned int len, uint8_t hmac[16])
     {
         SHA1_CTX ctx;
@@ -97,7 +120,7 @@ namespace Installer {
         off = ntohl(*(uint32_t *)&head_bin[0x8]);
         len = ntohl(*(uint32_t *)&head_bin[0x10]);
         out = ntohl(*(uint32_t *)&head_bin[0xD4]);
-        fpkg_hmac(&head_bin[off], len-64, hmac);
+        fpkg_hmac(&head_bin[off], len - 64, hmac);
         memcpy(&head_bin[out], hmac, 16);
 
         // hmac of everything
@@ -132,10 +155,33 @@ namespace Installer {
     {
         int res;
 
-        sceShellUtilLock(SCE_SHELL_UTIL_LOCK_TYPE_PS_BTN);
+        res = loadScePaf();
+        if (res < 0)
+            return res;
+
+        res = sceSysmoduleLoadModuleInternal(SCE_SYSMODULE_INTERNAL_PROMOTER_UTIL);
+        if (res < 0)
+            return res;
+
+        res = scePromoterUtilityInit();
+        if (res < 0)
+            return res;
 
         res = scePromoterUtilityPromotePkgWithRif(path.c_str(), 1);
-        sceShellUtilUnlock(SCE_SHELL_UTIL_LOCK_TYPE_PS_BTN);
+        if (res < 0)
+            return res;
+
+        res = scePromoterUtilityExit();
+        if (res < 0)
+            return res;
+
+        res = sceSysmoduleUnloadModuleInternal(SCE_SYSMODULE_INTERNAL_PROMOTER_UTIL);
+        if (res < 0)
+            return res;
+
+        res = unloadScePaf();
+        if (res < 0)
+            return res;
 
         return res;
     }
@@ -171,7 +217,7 @@ namespace Installer {
             return path;
 
         std::vector<DirEntry> files = FS::ListDir(path, &err);
-        for (int i=0; i < files.size(); i++)
+        for (int i = 0; i < files.size(); i++)
         {
             if (files[i].isDir && strcmp(files[i].name, "..") != 0)
             {
@@ -218,14 +264,39 @@ namespace Installer {
             res = MakeHeadBin(package_path);
             if (res < 0)
                 return res;
+
+            // Promote app
+            res = PromoteApp(package_path);
+            if (res < 0)
+            {
+                return res;
+            }
         }
-        
-        // Promote app
-        res = PromoteApp(package_path);
-        if (res < 0)
+        else
         {
-            return res;
+            // move package to ux0:/app folder
+            std::string sfo_path = package_path + "/sce_sys/param.sfo";
+            if (!FS::FileExists(sfo_path))
+                return -1;
+
+            const auto sfo = FS::Load(sfo_path);
+
+            // Get title id
+            char titleid[12];
+            memset(titleid, 0, sizeof(titleid));
+            snprintf(titleid, 12, "%s", SFO::GetString(sfo.data(), sfo.size(), "TITLE_ID"));
+            sfo.clear();
+
+            std::string new_package_path = std::string("ux0:/app/") + titleid;
+            FS::Rename(package_path, new_package_path);
+
+            res = PromoteApp(new_package_path);
+            if (res < 0)
+            {
+                return res;
+            }
         }
+
         return 0;
     }
 
