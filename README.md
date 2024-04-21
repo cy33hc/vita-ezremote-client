@@ -9,6 +9,8 @@ ezRemote Client is a File Manager application that allows you to connect the VIT
  - File management function include cut/copy/paste/rename/delete/new folder/file for files on VITA local drives
  - Install homebrew packages in VPK,ZIP,RAR,7ZIP/Folders from both Local and Remote
  - Install NPS_Browser generates packages in ZIP,RAR,7ZIP/Folders from both Local and Remote
+ - Extract ZIP, RAR, 7ZIP files for both Local and Remote
+ - Create ZIP package on Local
 
 ## Usage
 To distinguish between FTP, SMB, NFS, WebDAV or HTTP, the URL must be prefix with **ftp://**, **smb://**, **nfs://**, **webdav://**, **webdavs://**, **http://**, **https://**
