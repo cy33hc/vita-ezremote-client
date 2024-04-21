@@ -786,7 +786,7 @@ namespace Actions
                 break;
 
             sprintf(activity_message, "%s %s", lang_strings[STR_INSTALLING], it->name);
-
+            bytes_transfered=0
             if (Installer::InstallPackage(*it, remoteclient) == 0)
                 success++;
             else
@@ -799,6 +799,7 @@ namespace Actions
         activity_inprogess = false;
         multi_selected_remote_files.clear();
         Windows::SetModalMode(false);
+        selected_action = ACTION_REFRESH_LOCAL_FILES;
         return NULL;
     }
 
@@ -838,6 +839,7 @@ namespace Actions
 
             if (strncmp(it->path, "ux0:app/", 8) != 0 && strncmp(it->path, "ux0:/app/", 9) != 0)
             {
+                bytes_transfered=0
                 if (Installer::InstallPackage(*it) == 0)
                     success++;
                 else
@@ -852,8 +854,9 @@ namespace Actions
         }
 
         activity_inprogess = false;
-        multi_selected_remote_files.clear();
+        multi_selected_local_files.clear();
         Windows::SetModalMode(false);
+        selected_action = ACTION_REFRESH_LOCAL_FILES;
         return NULL;
     }
 
