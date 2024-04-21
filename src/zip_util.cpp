@@ -20,7 +20,6 @@
 #include "util.h"
 #include "zip.h"
 #include "zip_util.h"
-#include "dbglogger.h"
 
 namespace ZipUtil
 {
@@ -460,12 +459,12 @@ namespace ZipUtil
                 FtpClient *_client = (FtpClient *)data->client;
                 _client->SetCallbackXferFunction(data->ftp_xfer_callbak);
             }
-            
+
             free(client_data);
         }
         return 0;
     }
-
+    
     /*
      * Main loop: open the zipfile, iterate over its contents and decide what
      * to do with each entry.
@@ -510,13 +509,6 @@ namespace ZipUtil
                 sprintf(status_message, "archive_read_open failed - %s", archive_error_string(a));
                 return 0;
             }
-
-            /* ret = archive_read_set_seek_callback(a, SeekRemoteArchive);
-            if (ret < ARCHIVE_OK)
-            {
-                sprintf(status_message, "archive_read_set_seek_callback failed - %s", archive_error_string(a));
-                return 0;
-            } */
         }
 
         for (;;)
@@ -543,74 +535,4 @@ namespace ZipUtil
         return 1;
     }
 
-    bool ContainsFiles(const DirEntry &file, std::vector<std::string> &file_list, RemoteClient *client)
-    {
-        struct archive *a;
-        struct archive_entry *e;
-        RemoteArchiveData *client_data = nullptr;
-        int should_match = file_list.size();
-        int ret;
-
-        if ((a = archive_read_new()) == NULL)
-        {
-            sprintf(status_message, "%s", "archive_read_new failed");
-            return false;
-        }
-
-        archive_read_support_format_all(a);
-        archive_read_support_filter_all(a);
-
-        if (client == nullptr)
-        {
-            ret = archive_read_open_filename(a, file.path, ARCHIVE_TRANSFER_SIZE);
-            if (ret < ARCHIVE_OK)
-            {
-                sprintf(status_message, "%s", "archive_read_open_filename failed");
-                return false;
-            }
-        }
-        else
-        {
-            client_data = OpenRemoteArchive(file.path, client);
-            if (client_data == nullptr)
-            {
-                sprintf(status_message, "%s", "archive_read_open_filename failed");
-                return false;
-            }
-
-            ret = archive_read_open(a, client_data, NULL, ReadRemoteArchive, CloseRemoteArchive);
-            if (ret < ARCHIVE_OK)
-            {
-                sprintf(status_message, "archive_read_open failed - %s", archive_error_string(a));
-                return false;
-            }
-        }
-
-        for (;;)
-        {
-            ret = archive_read_next_header(a, &e);
-            if (ret < ARCHIVE_OK)
-            {
-                sprintf(status_message, "%s", "archive_read_next_header failed");
-                archive_read_free(a);
-                break;
-            }
-
-            if (ret == ARCHIVE_EOF)
-                break;
-
-            std::string filename = std::string(archive_entry_pathname(e));
-            if (Util::Contains(file_list, filename, true))
-                should_match--;
-
-            if (should_match == 0)
-                break;
-
-            archive_read_data_skip(a);
-        }
-
-        archive_read_free(a);
-
-        return should_match == 0;
-    }
 }

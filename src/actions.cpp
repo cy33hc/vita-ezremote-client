@@ -773,7 +773,6 @@ namespace Actions
     {
         int failed = 0;
         int success = 0;
-        int skipped = 0;
 
         std::vector<DirEntry> files;
         if (multi_selected_remote_files.size() > 0)
@@ -788,17 +787,13 @@ namespace Actions
 
             sprintf(activity_message, "%s %s", lang_strings[STR_INSTALLING], it->name);
 
-            if (Installer::IsValidPackage(*it, remoteclient))
-            {
-                Installer::InstallPackage(*it, remoteclient);
+            if (Installer::InstallPackage(*it, remoteclient) == 0)
                 success++;
-            }
             else
-                skipped++;
+                failed++;
 
-            sprintf(status_message, "%s %s = %d, %s = %d, %s = %d", lang_strings[STR_INSTALL],
-                    lang_strings[STR_INSTALL_SUCCESS], success, lang_strings[STR_INSTALL_FAILED], failed,
-                    lang_strings[STR_INSTALL_SKIPPED], skipped);
+            sprintf(status_message, "%s %s = %d, %s = %d", lang_strings[STR_INSTALL],
+                    lang_strings[STR_INSTALL_SUCCESS], success, lang_strings[STR_INSTALL_FAILED], failed);
         }
 
         activity_inprogess = false;
@@ -841,7 +836,7 @@ namespace Actions
 
             sprintf(activity_message, "%s %s", lang_strings[STR_INSTALLING], it->name);
 
-            if ((strncmp(it->path, "ux0:app/", 8) != 0 && strncmp(it->path, "ux0:/app/", 9) != 0) && Installer::IsValidPackage(*it))
+            if (strncmp(it->path, "ux0:app/", 8) != 0 && strncmp(it->path, "ux0:/app/", 9) != 0)
             {
                 if (Installer::InstallPackage(*it) == 0)
                     success++;

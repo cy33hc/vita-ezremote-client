@@ -20,6 +20,5 @@ namespace Installer {
     int CheckAppExist(const std::string &titleid);
     int MakeHeadBin(const std::string &path);
     int InstallPackage(const DirEntry &entry, RemoteClient *client = nullptr);
-    bool IsValidPackage(const DirEntry &entry, RemoteClient *client = nullptr);
 }
 #endif

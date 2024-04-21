@@ -5,7 +5,6 @@
 #include "gui.h"
 #include "zip_util.h"
 #include "util.h"
-#include "dbglogger.h"
 
 extern "C"
 {
@@ -54,6 +53,9 @@ namespace Installer
 
         std::string head_path = path + "/sce_sys/package/head.bin";
         std::string sfo_path = path + "/sce_sys/param.sfo";
+
+        if (!FS::FileExists(sfo_path))
+            return -1;
 
         // Read param.sfo
         const auto sfo = FS::Load(sfo_path);
@@ -148,29 +150,7 @@ namespace Installer
         if (res < 0)
             return res;
 
-        return res;
-    }
-
-    bool IsValidPackage(const DirEntry &entry, RemoteClient *client)
-    {
-        if (!entry.isDir)
-        {
-            std::vector<std::string> match_files = {"sce_sys/param.sfo"};
-            if (ZipUtil::ContainsFiles(entry, match_files, client))
-                return true;
-        }
-        else
-        {
-            if (client != nullptr)
-            {
-                return client->FileExists(std::string(entry.path) + "/sce_sys/param.sfo");
-            }
-            else
-            {
-                return FS::FileExists(std::string(entry.path) + "/sce_sys/param.sfo");
-            }
-        }
-        return false;
+        return 0;
     }
 
     std::string GetBasePackageDir(const std::string &path)
@@ -241,7 +221,7 @@ namespace Installer
             FS::Rename(package_path, new_package_path);
             package_path = new_package_path;
         }
-        
+
         // Promote app
         res = PromoteApp(package_path);
         if (res < 0)

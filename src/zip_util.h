@@ -43,6 +43,5 @@ namespace ZipUtil
 {
     int ZipAddPath(zipFile zf, const std::string &path, int filename_start, int level);
     int Extract(const DirEntry &file, const std::string &dir, RemoteClient *client = nullptr);
-    bool ContainsFiles(const DirEntry &file, std::vector<std::string> &file_list, RemoteClient *client = nullptr);
 }
 #endif
