@@ -1021,18 +1021,6 @@ namespace Windows
                 ImGui::Separator();
             }
 
-            ImGui::PushID("Install##settings");
-            if (ImGui::Selectable(lang_strings[STR_INSTALL], false, ImGuiSelectableFlags_DontClosePopups, ImVec2(220, 0)))
-            {
-                SetModalMode(false);
-                selected_action = ACTION_INSTALL_LOCAL_PKG;
-                if (remote_browser_selected)
-                    selected_action = ACTION_INSTALL_REMOTE_PKG;
-                ImGui::CloseCurrentPopup();
-            }
-            ImGui::PopID();
-            ImGui::Separator();
-
             if (remote_browser_selected)
             {
                 ImGui::PushID("Download##settings");
@@ -1048,6 +1036,18 @@ namespace Windows
                 ImGui::PopID();
                 ImGui::Separator();
             }
+
+            ImGui::PushID("Install##settings");
+            if (ImGui::Selectable(lang_strings[STR_INSTALL], false, ImGuiSelectableFlags_DontClosePopups, ImVec2(220, 0)))
+            {
+                SetModalMode(false);
+                selected_action = ACTION_INSTALL_LOCAL_PKG;
+                if (remote_browser_selected)
+                    selected_action = ACTION_INSTALL_REMOTE_PKG;
+                ImGui::CloseCurrentPopup();
+            }
+            ImGui::PopID();
+            ImGui::Separator();
 
             flags = ImGuiSelectableFlags_Disabled;
             if (local_browser_selected || remote_browser_selected)
