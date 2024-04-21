@@ -21,7 +21,7 @@
 
 namespace Actions
 {
-    static int FtpCallback(int64_t xfered, void* arg)
+    static int FtpCallback(int64_t xfered, void *arg)
     {
         bytes_transfered = xfered;
         return 1;
@@ -366,7 +366,7 @@ namespace Actions
                     return 1;
 
                 int path_length = strlen(dest) + strlen(entries[i].name) + 2;
-                char *new_path = (char*)malloc(path_length);
+                char *new_path = (char *)malloc(path_length);
                 snprintf(new_path, path_length, "%s%s%s", dest, FS::hasEndSlash(dest) ? "" : "/", entries[i].name);
 
                 if (entries[i].isDir)
@@ -401,7 +401,7 @@ namespace Actions
         else
         {
             int path_length = strlen(dest) + strlen(src.name) + 2;
-            char *new_path = (char*)malloc(path_length);
+            char *new_path = (char *)malloc(path_length);
             snprintf(new_path, path_length, "%s%s%s", dest, FS::hasEndSlash(dest) ? "" : "/", src.name);
             snprintf(activity_message, 1024, "%s %s", lang_strings[STR_UPLOADING], src.name);
             bytes_to_download = src.file_size;
@@ -516,7 +516,7 @@ namespace Actions
                     return 1;
 
                 int path_length = strlen(dest) + strlen(entries[i].name) + 2;
-                char *new_path = (char*)malloc(path_length);
+                char *new_path = (char *)malloc(path_length);
                 snprintf(new_path, path_length, "%s%s%s", dest, FS::hasEndSlash(dest) ? "" : "/", entries[i].name);
 
                 if (entries[i].isDir)
@@ -549,7 +549,7 @@ namespace Actions
         else
         {
             int path_length = strlen(dest) + strlen(src.name) + 2;
-            char *new_path = (char*)malloc(path_length);
+            char *new_path = (char *)malloc(path_length);
             snprintf(new_path, path_length, "%s%s%s", dest, FS::hasEndSlash(dest) ? "" : "/", src.name);
             snprintf(activity_message, 1024, "%s %s", lang_strings[STR_DOWNLOADING], src.path);
             ret = DownloadFile(src.path, new_path);
@@ -609,7 +609,7 @@ namespace Actions
         {
             if (remoteclient != nullptr && remoteclient->clientType() == CLIENT_TYPE_FTP)
             {
-                FtpClient *ftpclient = (FtpClient*)remoteclient;
+                FtpClient *ftpclient = (FtpClient *)remoteclient;
                 idle = ftpclient->GetIdleTime();
                 if (idle > 60000000)
                 {
@@ -780,7 +780,7 @@ namespace Actions
             std::copy(multi_selected_remote_files.begin(), multi_selected_remote_files.end(), std::back_inserter(files));
         else
             files.push_back(selected_remote_file);
-       
+
         for (std::vector<DirEntry>::iterator it = files.begin(); it != files.end(); ++it)
         {
             if (stop_activity)
@@ -820,7 +820,7 @@ namespace Actions
             multi_selected_remote_files.clear();
             Windows::SetModalMode(false);
         }
-   }
+    }
 
     void InstallLocalPkgsThread(SceSize args, void *argp)
     {
@@ -833,7 +833,7 @@ namespace Actions
             std::copy(multi_selected_local_files.begin(), multi_selected_local_files.end(), std::back_inserter(files));
         else
             files.push_back(selected_local_file);
-       
+
         for (std::vector<DirEntry>::iterator it = files.begin(); it != files.end(); ++it)
         {
             if (stop_activity)
@@ -841,7 +841,7 @@ namespace Actions
 
             sprintf(activity_message, "%s %s", lang_strings[STR_INSTALLING], it->name);
 
-            if ((strncmp(it->path, "ux0:app/", 8)!=0 && strncmp(it->path, "ux0:/app/", 9)!=0) && Installer::IsValidPackage(*it))
+            if ((strncmp(it->path, "ux0:app/", 8) != 0 && strncmp(it->path, "ux0:/app/", 9) != 0) && Installer::IsValidPackage(*it))
             {
                 if (Installer::InstallPackage(*it) == 0)
                     success++;
@@ -875,7 +875,7 @@ namespace Actions
             multi_selected_remote_files.clear();
             Windows::SetModalMode(false);
         }
-   }
+    }
 
     void Connect()
     {
@@ -1114,7 +1114,7 @@ namespace Actions
         local_paste_files.clear();
         Windows::SetModalMode(false);
         selected_action = ACTION_REFRESH_LOCAL_FILES;
-        return sceKernelExitDeleteThread(0);;
+        return sceKernelExitDeleteThread(0);
     }
 
     void MoveLocalFiles()
@@ -1164,7 +1164,7 @@ namespace Actions
         local_paste_files.clear();
         Windows::SetModalMode(false);
         selected_action = ACTION_REFRESH_LOCAL_FILES;
-        return sceKernelExitDeleteThread(0);;
+        return sceKernelExitDeleteThread(0);
     }
 
     void CopyLocalFiles()
@@ -1250,7 +1250,7 @@ namespace Actions
         remote_paste_files.clear();
         Windows::SetModalMode(false);
         selected_action = ACTION_REFRESH_REMOTE_FILES;
-        return sceKernelExitDeleteThread(0);;
+        return sceKernelExitDeleteThread(0);
     }
 
     void MoveRemoteFiles()
@@ -1371,7 +1371,7 @@ namespace Actions
         remote_paste_files.clear();
         Windows::SetModalMode(false);
         selected_action = ACTION_REFRESH_REMOTE_FILES;
-        return sceKernelExitDeleteThread(0);;
+        return sceKernelExitDeleteThread(0);
     }
 
     void CopyRemoteFiles()
@@ -1401,7 +1401,7 @@ namespace Actions
             temp_file = new_file + "." + std::to_string(i);
             i++;
         }
-        FILE* f = FS::Create(temp_file);
+        FILE *f = FS::Create(temp_file);
         FS::Close(f);
         RefreshLocalFiles(false);
         sprintf(local_file_to_select, "%s", temp_file.c_str());

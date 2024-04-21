@@ -16,27 +16,6 @@ char updater_message[256];
 
 namespace Installer
 {
-    static int loadScePaf()
-    {
-        static int32_t argp[] = {0x180000, -1, -1, 1, -1, -1};
-
-        int result = -1;
-
-        int buf[4];
-        buf[0] = sizeof(buf);
-        buf[1] = (uint32_t)&result;
-        buf[2] = -1;
-        buf[3] = -1;
-
-        return sceSysmoduleLoadModuleInternalWithArg(SCE_SYSMODULE_INTERNAL_PAF, sizeof(argp), argp, (SceSysmoduleOpt*)buf);
-    }
-
-    static int unloadScePaf()
-    {
-        uint32_t buf = 0;
-        return sceSysmoduleUnloadModuleInternalWithArg(SCE_SYSMODULE_INTERNAL_PAF, 0, NULL, (SceSysmoduleOpt*)buf);
-    }
-
     static void fpkg_hmac(const uint8_t *data, unsigned int len, uint8_t hmac[16])
     {
         SHA1_CTX ctx;
@@ -155,38 +134,24 @@ namespace Installer
     {
         int res;
 
-        res = loadScePaf();
-        if (res < 0)
-            return res;
+        std::string sfo_path = path + "/sce_sys/param.sfo";
+        const auto sfo = FS::Load(sfo_path);
 
-        res = sceSysmoduleLoadModuleInternal(SCE_SYSMODULE_INTERNAL_PROMOTER_UTIL);
-        if (res < 0)
-            return res;
+        // Get title
+        char title[256];
+        memset(title, 0, sizeof(title));
+        snprintf(title, 255, "%s", SFO::GetString(sfo.data(), sfo.size(), "TITLE"));
+        sfo.clear();
 
-        res = scePromoterUtilityInit();
-        if (res < 0)
-            return res;
-
+        sprintf(activity_message, "%s %s", lang_strings[STR_PROMOTING], title);
         res = scePromoterUtilityPromotePkgWithRif(path.c_str(), 1);
-        if (res < 0)
-            return res;
-
-        res = scePromoterUtilityExit();
-        if (res < 0)
-            return res;
-
-        res = sceSysmoduleUnloadModuleInternal(SCE_SYSMODULE_INTERNAL_PROMOTER_UTIL);
-        if (res < 0)
-            return res;
-
-        res = unloadScePaf();
         if (res < 0)
             return res;
 
         return res;
     }
 
-    bool IsValidPackage(const DirEntry &entry, RemoteClient *client = nullptr)
+    bool IsValidPackage(const DirEntry &entry, RemoteClient *client)
     {
         if (!entry.isDir)
         {
@@ -235,24 +200,28 @@ namespace Installer
         int res;
         std::string package_path;
 
+        if (FS::FileExists(TMP_PACKAGE_DIR))
+        {
+            FS::RmRecursive(TMP_PACKAGE_DIR);
+            FS::MkDirs(TMP_PACKAGE_DIR);
+        }
+
         if (entry.isDir)
         {
             if (client != nullptr)
             {
-                FS::RmRecursive(PACKAGE_DIR);
-                Actions::Download(entry, PACKAGE_DIR);
+                Actions::Download(entry, TMP_PACKAGE_DIR);
             }
         }
         else
         {
-            FS::RmRecursive(PACKAGE_DIR);
-            ZipUtil::Extract(entry, PACKAGE_DIR, client);
+            ZipUtil::Extract(entry, TMP_PACKAGE_DIR, client);
         }
 
         // Make head.bin
         if (client != nullptr || !entry.isDir)
         {
-            package_path = GetBasePackageDir(PACKAGE_DIR);
+            package_path = GetBasePackageDir(TMP_PACKAGE_DIR);
         }
         else
         {
@@ -264,38 +233,16 @@ namespace Installer
             res = MakeHeadBin(package_path);
             if (res < 0)
                 return res;
-
-            // Promote app
-            res = PromoteApp(package_path);
-            if (res < 0)
-            {
-                return res;
-            }
         }
-        else
+
+        // Promote app
+        res = PromoteApp(package_path);
+        if (res < 0)
         {
-            // move package to ux0:/app folder
-            std::string sfo_path = package_path + "/sce_sys/param.sfo";
-            if (!FS::FileExists(sfo_path))
-                return -1;
-
-            const auto sfo = FS::Load(sfo_path);
-
-            // Get title id
-            char titleid[12];
-            memset(titleid, 0, sizeof(titleid));
-            snprintf(titleid, 12, "%s", SFO::GetString(sfo.data(), sfo.size(), "TITLE_ID"));
-            sfo.clear();
-
-            std::string new_package_path = std::string("ux0:/app/") + titleid;
-            FS::Rename(package_path, new_package_path);
-
-            res = PromoteApp(new_package_path);
-            if (res < 0)
-            {
-                return res;
-            }
+            return res;
         }
+
+        FS::RmRecursive(TMP_PACKAGE_DIR);
 
         return 0;
     }

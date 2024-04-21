@@ -12,7 +12,7 @@ extern "C" {
 #define ntohl __builtin_bswap32
 
 #define HEAD_BIN_PATH APP_PATH "/head.bin"
-#define PACKAGE_DIR DATA_PATH "/tmp/pkg"
+#define TMP_PACKAGE_DIR "ux0:/ezremote_tmp"
 #define HEAD_BIN PACKAGE_DIR "/sce_sys/package/head.bin"
 
 namespace Installer {

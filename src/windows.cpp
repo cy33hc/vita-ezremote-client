@@ -1021,7 +1021,7 @@ namespace Windows
                 ImGui::Separator();
             }
 
-            /* ImGui::PushID("Install##settings");
+            ImGui::PushID("Install##settings");
             if (ImGui::Selectable(lang_strings[STR_INSTALL], false, ImGuiSelectableFlags_DontClosePopups, ImVec2(220, 0)))
             {
                 SetModalMode(false);
@@ -1031,7 +1031,7 @@ namespace Windows
                 ImGui::CloseCurrentPopup();
             }
             ImGui::PopID();
-            ImGui::Separator(); */
+            ImGui::Separator();
 
             if (remote_browser_selected)
             {

@@ -274,8 +274,19 @@ namespace Services
 		ImGui::DestroyContext();
 	}
 
+	static void LoadScePaf()
+	{
+		SceSysmoduleOpt opt = {0};
+		opt.result = &opt.flags;
+		uint32_t scepaf_argp[] = {0x400000, 0xEA60, 0x40000, 0, 0};
+		sceSysmoduleLoadModuleInternalWithArg(SCE_SYSMODULE_INTERNAL_PAF, sizeof(scepaf_argp), scepaf_argp, &opt);
+	}
+
 	void initSceAppUtil()
 	{
+		LoadScePaf();
+		sceSysmoduleLoadModuleInternal(SCE_SYSMODULE_INTERNAL_PROMOTER_UTIL);
+
 		// Init SceAppUtil
 		SceAppUtilInitParam init_param;
 		SceAppUtilBootParam boot_param;
@@ -291,13 +302,6 @@ namespace Services
 		sceAppUtilSystemParamGetInt(SCE_SYSTEM_PARAM_ID_ENTER_BUTTON, (int *)&config.enterButtonAssign);
 		sceCommonDialogSetConfigParam(&config);
 
-		uint32_t scepaf_argp[] = {0x400000, 0xEA60, 0x40000, 0, 0};
-
-		SceSysmoduleOpt option;
-		option.flags = 0;
-		option.result = (int *)&option.flags;
-		sceSysmoduleLoadModuleInternalWithArg(SCE_SYSMODULE_INTERNAL_PAF, sizeof(scepaf_argp), scepaf_argp, &option);
-		sceSysmoduleLoadModuleInternal(SCE_SYSMODULE_INTERNAL_PROMOTER_UTIL);
 		scePromoterUtilityInit();
 	}
 
