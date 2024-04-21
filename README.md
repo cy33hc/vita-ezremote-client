@@ -1,11 +1,17 @@
 # ezRemote Client
 
-ezRemote Client is a File Manager application that allows you to connect the VITA to remote FTP, SMB, NFS, WebDAV servers to transfer  and manage files. The interface is inspired by Filezilla client which provides a commander like GUI.
+ezRemote Client is a File Manager application that allows you to connect the VITA to remote FTP, SMB, NFS, WebDAV, HTTP servers to transfer and manage files. The interface is inspired by Filezilla client which provides a commander like GUI.
 
 ![Preview](/screenshot.jpg)
 
+## Features
+ - Transfer files back and forth between VITA and FTP/SMB/NFS/WebDAV/Http(Rclone,IIS,nginx,apache,NpxServe) server
+ - File management function include cut/copy/paste/rename/delete/new folder/file for files on VITA local drives
+ - Install homebrew packages in VPK,ZIP,RAR,7ZIP/Folders from both Local and Remote
+ - Install NPS_Browser generates packages in ZIP,RAR,7ZIP/Folders from both Local and Remote
+
 ## Usage
-To distinguish between FTP, SMB, NFS, WebDAV or HTTP, the URL must be prefix with **ftp://**, **smb://**, **nfs://**, **webdav://**, **webdavs://**
+To distinguish between FTP, SMB, NFS, WebDAV or HTTP, the URL must be prefix with **ftp://**, **smb://**, **nfs://**, **webdav://**, **webdavs://**, **http://**, **https://**
 
  - The url format for FTP is
    ```
@@ -55,14 +61,20 @@ To distinguish between FTP, SMB, NFS, WebDAV or HTTP, the URL must be prefix wit
      - url_path is optional based on your WebDAV hosting requiremets
    ```
   
+ - The url format for HTTP is
+   ```
+   http://hostname[:port]/[url_path]
+   https://hostname[:port]/[url_path]
+
+     - hostname can be the textual hostname or an IP address. hostname is required
+     - port is optional and defaults to 80(http) and 443(https) if not provided
+     - url_path is optional
+   ```
+  
 Tested with following WebDAV server:
  - **(Recommeded)** [RClone](https://rclone.org/) - For hosting your own WebDAV server. You can use RClone WebDAV server as proxy to 70+ public file hosting services (Eg. Google Drive, OneDrive, Mega, dropbox, NextCloud etc..)
  - [Dufs](https://github.com/sigoden/dufs) - For hosting your own WebDAV server.
  - [SFTPgo](https://github.com/drakkan/sftpgo) - For local hosted WebDAV server. Can also be used as a webdav frontend for Cloud Storage like AWS S3, Azure Blob or Google Storage.
-
-## Features Native Application##
- - Transfer files back and forth between VITA and FTP/SMB/NFS/WebDAV server
- - File management function include cut/copy/paste/rename/delete/new folder/file for files on VITA local drives
 
 ## Controls
 ```

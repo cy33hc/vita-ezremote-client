@@ -13,7 +13,7 @@ include("${VITASDK}/share/vita.cmake" REQUIRED)
 
 set(VITA_APP_NAME "ezRemote Client")
 set(VITA_TITLEID  "RMTCLI001")
-set(VITA_VERSION  "01.01")
+set(VITA_VERSION  "01.02")
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fpermissive")
 set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS}")
@@ -57,7 +57,6 @@ add_executable(${PROJECT_NAME}
 )
 
 target_link_libraries(${PROJECT_NAME}
-  dbglogger
   c
   imgui
   vita2d
