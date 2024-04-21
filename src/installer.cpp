@@ -235,6 +235,13 @@ namespace Installer
                 return res;
         }
 
+        if (package_path.compare(TMP_PACKAGE_DIR) == 0)
+        {
+            std::string new_package_path = "ux0:/data/ezremote_tmp";
+            FS::Rename(package_path, new_package_path);
+            package_path = new_package_path;
+        }
+        
         // Promote app
         res = PromoteApp(package_path);
         if (res < 0)
