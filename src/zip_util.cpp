@@ -464,6 +464,37 @@ namespace ZipUtil
         }
         return 0;
     }
+
+    int64_t SeekRemoteArchive(struct archive *, void *client_data, int64_t offset, int whence)
+    {
+        RemoteArchiveData *data = (RemoteArchiveData *)client_data;
+
+        if (whence == SEEK_SET)
+        {
+            data->offset = offset;
+        }
+        else if (whence == SEEK_CUR)
+        {
+            data->offset = data->offset + offset - 1;
+        }
+        else if (whence == SEEK_END)
+        {
+            data->offset = data->size - 1;
+        }
+        else
+            return ARCHIVE_FATAL;
+
+        return data->offset;
+    }
+
+    int64_t	SkipRemoteArchive(struct archive *, void *client_data, int64_t request)
+    {
+        RemoteArchiveData *data = (RemoteArchiveData *)client_data;
+
+        data->offset = data->offset + request - 1;
+
+        return request;
+    }
     
     /*
      * Main loop: open the zipfile, iterate over its contents and decide what
@@ -503,7 +534,14 @@ namespace ZipUtil
                 return 0;
             }
 
-            ret = archive_read_open(a, client_data, NULL, ReadRemoteArchive, CloseRemoteArchive);
+            ret = archive_read_set_seek_callback(a, SeekRemoteArchive);
+            if (ret < ARCHIVE_OK)
+            {
+                sprintf(status_message, "archive_read_set_seek_callback failed - %s", archive_error_string(a));
+                return 0;
+            }
+
+            ret = archive_read_open2(a, client_data, NULL, ReadRemoteArchive, SkipRemoteArchive, CloseRemoteArchive);
             if (ret < ARCHIVE_OK)
             {
                 sprintf(status_message, "archive_read_open failed - %s", archive_error_string(a));
@@ -535,4 +573,88 @@ namespace ZipUtil
         return 1;
     }
 
+    bool ContainsFiles(const DirEntry &file, std::vector<std::string> &file_list, bool match_any, RemoteClient *client)
+    {
+        struct archive *a;
+        struct archive_entry *e;
+        RemoteArchiveData *client_data = nullptr;
+        int should_match = file_list.size();
+        int ret;
+
+        if ((a = archive_read_new()) == NULL)
+        {
+            sprintf(status_message, "%s", "archive_read_new failed");
+            return false;
+        }
+
+        archive_read_support_format_all(a);
+        archive_read_support_filter_all(a);
+
+        if (client == nullptr)
+        {
+            ret = archive_read_open_filename(a, file.path, ARCHIVE_TRANSFER_SIZE);
+            if (ret < ARCHIVE_OK)
+            {
+                sprintf(status_message, "%s", "archive_read_open_filename failed");
+                return false;
+            }
+        }
+        else
+        {
+            client_data = OpenRemoteArchive(file.path, client);
+            if (client_data == nullptr)
+            {
+                sprintf(status_message, "%s", "archive_read_open_filename failed");
+                return false;
+            }
+
+            ret = archive_read_set_seek_callback(a, SeekRemoteArchive);
+            if (ret < ARCHIVE_OK)
+            {
+                sprintf(status_message, "archive_read_set_seek_callback failed - %s", archive_error_string(a));
+                return 0;
+            }
+
+            ret = archive_read_open2(a, client_data, NULL, ReadRemoteArchive, SkipRemoteArchive, CloseRemoteArchive);
+            if (ret < ARCHIVE_OK)
+            {
+                sprintf(status_message, "archive_read_open failed - %s", archive_error_string(a));
+                return false;
+            }
+        }
+
+        for (;;)
+        {
+            ret = archive_read_next_header(a, &e);
+            if (ret < ARCHIVE_OK)
+            {
+                sprintf(status_message, "%s", "archive_read_next_header failed");
+                archive_read_free(a);
+                break;
+            }
+
+            if (ret == ARCHIVE_EOF)
+                break;
+
+            std::string filename = std::string(archive_entry_pathname(e));
+            if (Util::Contains(file_list, filename, true))
+            {
+                if (match_any)
+                {
+                    archive_read_free(a);
+                    return true;
+                }
+                should_match--;
+            }
+
+            if (should_match == 0)
+                break;
+
+            archive_read_data_skip(a);
+        }
+
+        archive_read_free(a);
+
+        return should_match == 0;
+    }
 }
