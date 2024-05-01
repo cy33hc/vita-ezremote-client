@@ -30,7 +30,7 @@ static uint16_t ime_initial_text_utf16[SCE_IME_DIALOG_MAX_TEXT_LENGTH];
 static uint16_t ime_input_text_utf16[SCE_IME_DIALOG_MAX_TEXT_LENGTH + 1];
 static uint8_t ime_input_text_utf8[SCE_IME_DIALOG_MAX_TEXT_LENGTH + 1];
 
-static void utf16_to_utf8(const uint16_t *src, uint8_t *dst)
+static void ime_utf16_to_utf8(const uint16_t *src, uint8_t *dst)
 {
   int i;
   for (i = 0; src[i]; i++)
@@ -63,7 +63,7 @@ static void utf16_to_utf8(const uint16_t *src, uint8_t *dst)
   *dst = '\0';
 }
 
-static void utf8_to_utf16(const uint8_t *src, uint16_t *dst)
+static void ime_utf8_to_utf16(const uint8_t *src, uint16_t *dst)
 {
   int i;
   for (i = 0; src[i];)
@@ -100,8 +100,8 @@ namespace Dialog
     // Convert UTF8 to UTF16
     memset(ime_title_utf16, 0, sizeof(ime_title_utf16));
     memset(ime_initial_text_utf16, 0, sizeof(ime_initial_text_utf16));
-    utf8_to_utf16((uint8_t *)title, ime_title_utf16);
-    utf8_to_utf16((uint8_t *)initial_text, ime_initial_text_utf16);
+    ime_utf8_to_utf16((uint8_t *)title, ime_title_utf16);
+    ime_utf8_to_utf16((uint8_t *)initial_text, ime_initial_text_utf16);
 
     SceImeDialogParam param;
     sceImeDialogParamInit(&param);
@@ -155,7 +155,7 @@ namespace Dialog
 
     vita2d_start_drawing();
     vita2d_clear_screen();
-    SceCommonDialogStatus status = sceImeDialogGetStatus();
+    int status = sceImeDialogGetStatus();
     if (status == IME_DIALOG_RESULT_FINISHED)
     {
       SceImeDialogResult result;
@@ -166,7 +166,7 @@ namespace Dialog
           (ime_dialog_option != SCE_IME_OPTION_MULTILINE && result.button == SCE_IME_DIALOG_BUTTON_ENTER))
       {
         // Convert UTF16 to UTF8
-        utf16_to_utf8(ime_input_text_utf16, ime_input_text_utf8);
+        ime_utf16_to_utf8(ime_input_text_utf16, ime_input_text_utf8);
       }
       else
       {

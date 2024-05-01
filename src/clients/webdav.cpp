@@ -154,7 +154,7 @@ int WebDAVClient::Mkdir(const std::string &path)
     CHTTPClient::HeadersMap headers;
     CHTTPClient::HttpResponse res;
 
-    headers["Accept"] =  "*/*";
+    headers["Accept"] = "*/*";
     headers["Connection"] = "Keep-Alive";
     std::string encode_url = this->host_url + CHTTPClient::EncodeUrl(GetFullPath(path));
 
@@ -182,7 +182,7 @@ int WebDAVClient::Delete(const std::string &path)
     CHTTPClient::HeadersMap headers;
     CHTTPClient::HttpResponse res;
 
-    headers["Accept"] =  "*/*";
+    headers["Accept"] = "*/*";
     headers["Connection"] = "Keep-Alive";
     std::string encode_url = this->host_url + CHTTPClient::EncodeUrl(GetFullPath(path));
 
@@ -191,9 +191,8 @@ int WebDAVClient::Delete(const std::string &path)
         if (HTTP_SUCCESS(res.iCode))
             return 1;
     }
-    
-    return 0;
 
+    return 0;
 }
 
 int WebDAVClient::Copy(const std::string &from, const std::string &to)
@@ -201,7 +200,7 @@ int WebDAVClient::Copy(const std::string &from, const std::string &to)
     CHTTPClient::HeadersMap headers;
     CHTTPClient::HttpResponse res;
 
-    headers["Accept"] =  "*/*";
+    headers["Accept"] = "*/*";
     headers["Destination"] = GetFullPath(to);
     std::string encode_url = this->host_url + CHTTPClient::EncodeUrl(GetFullPath(from));
 
@@ -219,7 +218,7 @@ int WebDAVClient::Move(const std::string &from, const std::string &to)
     CHTTPClient::HeadersMap headers;
     CHTTPClient::HttpResponse res;
 
-    headers["Accept"] =  "*/*";
+    headers["Accept"] = "*/*";
     headers["Destination"] = GetFullPath(to);
     std::string encode_url = this->host_url + CHTTPClient::EncodeUrl(GetFullPath(from));
 
@@ -239,5 +238,5 @@ ClientType WebDAVClient::clientType()
 
 uint32_t WebDAVClient::SupportedActions()
 {
-    return REMOTE_ACTION_ALL;
+    return REMOTE_ACTION_ALL ^ REMOTE_ACTION_RAW_READ;
 }

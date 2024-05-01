@@ -16,18 +16,18 @@ BaseClient::~BaseClient()
         delete client;
 };
 
-int BaseClient::DownloadProgressCallback(void* ptr, double dTotalToDownload, double dNowDownloaded, double dTotalToUpload, double dNowUploaded)
+int BaseClient::DownloadProgressCallback(void *ptr, double dTotalToDownload, double dNowDownloaded, double dTotalToUpload, double dNowUploaded)
 {
-    CHTTPClient::ProgressFnStruct *progress_data = (CHTTPClient::ProgressFnStruct*) ptr;
-    uint64_t *bytes_transfered = (uint64_t *) progress_data->pOwner;
-	*bytes_transfered = dNowDownloaded;
+    CHTTPClient::ProgressFnStruct *progress_data = (CHTTPClient::ProgressFnStruct *)ptr;
+    uint64_t *bytes_transfered = (uint64_t *)progress_data->pOwner;
+    *bytes_transfered = dNowDownloaded;
     return 0;
 }
 
-int BaseClient::UploadProgressCallback(void* ptr, double dTotalToDownload, double dNowDownloaded, double dTotalToUpload, double dNowUploaded)
+int BaseClient::UploadProgressCallback(void *ptr, double dTotalToDownload, double dNowDownloaded, double dTotalToUpload, double dNowUploaded)
 {
-    CHTTPClient::ProgressFnStruct *progress_data = (CHTTPClient::ProgressFnStruct*) ptr;
-    uint64_t *bytes_transfered = (uint64_t *) progress_data->pOwner;
+    CHTTPClient::ProgressFnStruct *progress_data = (CHTTPClient::ProgressFnStruct *)ptr;
+    uint64_t *bytes_transfered = (uint64_t *)progress_data->pOwner;
     *bytes_transfered = dNowUploaded;
     return 0;
 }
@@ -42,7 +42,7 @@ int BaseClient::Connect(const std::string &url, const std::string &username, con
         this->host_url = url.substr(0, root_pos);
         this->base_path = url.substr(root_pos);
     }
-    client = new CHTTPClient([](const std::string& log){});
+    client = new CHTTPClient([](const std::string &log) {});
     client->SetBasicAuth(username, password);
     client->InitSession(true, CHTTPClient::SettingsFlag::NO_FLAGS);
     client->SetCertificateFile(CACERT_FILE);
@@ -64,7 +64,7 @@ int BaseClient::Rmdir(const std::string &path, bool recursive)
     return 0;
 }
 
-int BaseClient::Size(const std::string &path, int64_t *size)
+int BaseClient::Size(const std::string &path, uint64_t *size)
 {
     CHTTPClient::HeadersMap headers;
     CHTTPClient::HttpResponse res;
@@ -188,7 +188,7 @@ int BaseClient::Head(const std::string &path, void *buffer, uint64_t size)
 
 bool BaseClient::FileExists(const std::string &path)
 {
-    int64_t file_size;
+    uint64_t file_size;
     return Size(path, &file_size);
 }
 
@@ -304,4 +304,21 @@ std::string BaseClient::UnEscape(const std::string &url)
         curl_easy_cleanup(curl);
     }
     return "";
+}
+
+void *BaseClient::Open(const std::string &path, int flags)
+{
+    sprintf(this->response, "%s", lang_strings[STR_UNSUPPORTED_OPERATION_MSG]);
+    return nullptr;
+}
+
+void BaseClient::Close(void *fp)
+{
+    sprintf(this->response, "%s", lang_strings[STR_UNSUPPORTED_OPERATION_MSG]);
+}
+
+int BaseClient::GetRange(void *fp, void *buffer, uint64_t size, uint64_t offset)
+{
+    sprintf(this->response, "%s", lang_strings[STR_UNSUPPORTED_OPERATION_MSG]);
+    return -1;
 }

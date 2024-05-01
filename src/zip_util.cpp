@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <dirent.h>
+#include <fcntl.h>
 #include <sys/stat.h>
 #include <malloc.h>
 #include <archive.h>
@@ -81,7 +82,7 @@ namespace ZipUtil
             return res;
 
         // Open file to add
-        FILE *fd = FS::OpenRead(path);
+        void *fd = FS::OpenRead(path);
         if (fd == NULL)
         {
             zipCloseFileInZip(zf);
@@ -416,6 +417,10 @@ namespace ZipUtil
         client->Size(file, &data->size);
         data->client = client;
         data->path = file;
+        if (client->SupportedActions() & REMOTE_ACTION_RAW_READ)
+        {
+            data->fp = client->Open(file, O_RDONLY);
+        }
 
         if (client->clientType() == CLIENT_TYPE_FTP)
         {
@@ -440,7 +445,11 @@ namespace ZipUtil
             return 0;
 
         to_read = MIN(to_read, ARCHIVE_TRANSFER_SIZE);
-        ret = data->client->GetRange(data->path, data->buf, to_read, data->offset);
+        if (data->client->SupportedActions() & REMOTE_ACTION_RAW_READ)
+            ret = data->client->GetRange(data->fp, data->buf, to_read, data->offset);
+        else
+            ret = data->client->GetRange(data->path, data->buf, to_read, data->offset);
+
         if (ret == 0)
             return -1;
         data->offset = data->offset + to_read;
@@ -459,6 +468,8 @@ namespace ZipUtil
                 FtpClient *_client = (FtpClient *)data->client;
                 _client->SetCallbackXferFunction(data->ftp_xfer_callbak);
             }
+            if (data->client->SupportedActions() & REMOTE_ACTION_RAW_READ)
+                data->client->Close(data->fp);
 
             free(client_data);
         }

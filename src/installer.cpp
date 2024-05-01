@@ -58,7 +58,7 @@ namespace Installer
             return -1;
 
         // Read param.sfo
-        const auto sfo = FS::Load(sfo_path);
+        auto sfo = FS::Load(sfo_path);
 
         // Get title id
         char titleid[12];
@@ -84,7 +84,7 @@ namespace Installer
 
         // Allocate head.bin buffer
         std::vector<char> head_bin_data = FS::Load(HEAD_BIN_PATH);
-        uint8_t *head_bin = malloc(head_bin_data.size());
+        uint8_t *head_bin = (uint8_t *)malloc(head_bin_data.size());
         memcpy(head_bin, head_bin_data.data(), head_bin_data.size());
 
         // Write full title id
@@ -137,7 +137,7 @@ namespace Installer
         int res;
 
         std::string sfo_path = path + "/sce_sys/param.sfo";
-        const auto sfo = FS::Load(sfo_path);
+        auto sfo = FS::Load(sfo_path);
 
         // Get title
         char title[256];

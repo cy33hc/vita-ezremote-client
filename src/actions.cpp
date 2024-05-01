@@ -208,7 +208,7 @@ namespace Actions
         }
     }
 
-    void RenameLocalFolder(char *old_path, char *new_path)
+    void RenameLocalFolder(const char *old_path, const char *new_path)
     {
         snprintf(status_message, 1023, "%s", "");
         std::string new_name = std::string(new_path);
@@ -219,7 +219,7 @@ namespace Actions
         sprintf(local_file_to_select, "%s", new_name.c_str());
     }
 
-    void RenameRemoteFolder(char *old_path, char *new_path)
+    void RenameRemoteFolder(const char *old_path, const char *new_path)
     {
         snprintf(status_message, 1023, "%s", "");
         std::string new_name = std::string(new_path);
@@ -628,7 +628,7 @@ namespace Actions
         return sceKernelExitDeleteThread(0);
     }
 
-    void ExtractZipThread(SceSize args, void *argp)
+    int ExtractZipThread(SceSize args, void *argp)
     {
         FS::MkDirs(extract_zip_folder);
         std::vector<DirEntry> files;
@@ -674,7 +674,7 @@ namespace Actions
         snprintf(status_message, 1023, "%s", "");
     }
 
-    void ExtractRemoteZipThread(SceSize args, void *argp)
+    int ExtractRemoteZipThread(SceSize args, void *argp)
     {
         FS::MkDirs(extract_zip_folder);
         std::vector<DirEntry> files;
@@ -719,7 +719,7 @@ namespace Actions
         }
     }
 
-    void MakeZipThread(SceSize args, void *argp)
+    int MakeZipThread(SceSize args, void *argp)
     {
         zipFile zf = zipOpen64(zip_file_path, APPEND_STATUS_CREATE);
         if (zf != NULL)
@@ -769,7 +769,7 @@ namespace Actions
         }
     }
 
-    void InstallRemotePkgsThread(SceSize args, void *argp)
+    int InstallRemotePkgsThread(SceSize args, void *argp)
     {
         int failed = 0;
         int success = 0;
@@ -801,7 +801,7 @@ namespace Actions
         multi_selected_remote_files.clear();
         Windows::SetModalMode(false);
         selected_action = ACTION_REFRESH_LOCAL_FILES;
-        return NULL;
+        return sceKernelExitDeleteThread(0);;
     }
 
     void InstallRemotePkgs()
@@ -819,7 +819,7 @@ namespace Actions
         }
     }
 
-    void InstallLocalPkgsThread(SceSize args, void *argp)
+    int InstallLocalPkgsThread(SceSize args, void *argp)
     {
         int failed = 0;
         int success = 0;
@@ -858,7 +858,7 @@ namespace Actions
         multi_selected_local_files.clear();
         Windows::SetModalMode(false);
         selected_action = ACTION_REFRESH_LOCAL_FILES;
-        return NULL;
+        return sceKernelExitDeleteThread(0);;
     }
 
     void InstallLocalPkgs()
@@ -1079,7 +1079,7 @@ namespace Actions
         return 1;
     }
 
-    void MoveLocalFilesThread(SceSize args, void *argp)
+    int MoveLocalFilesThread(SceSize args, void *argp)
     {
         file_transfering = true;
         for (std::vector<DirEntry>::iterator it = local_paste_files.begin(); it != local_paste_files.end(); ++it)
@@ -1131,7 +1131,7 @@ namespace Actions
         }
     }
 
-    void CopyLocalFilesThread(SceSize args, void *argp)
+    int CopyLocalFilesThread(SceSize args, void *argp)
     {
         file_transfering = true;
         for (std::vector<DirEntry>::iterator it = local_paste_files.begin(); it != local_paste_files.end(); ++it)
@@ -1217,7 +1217,7 @@ namespace Actions
         return 1;
     }
 
-    void MoveRemoteFilesThread(SceSize args, void *argp)
+    int MoveRemoteFilesThread(SceSize args, void *argp)
     {
         file_transfering = false;
         for (std::vector<DirEntry>::iterator it = remote_paste_files.begin(); it != remote_paste_files.end(); ++it)
@@ -1334,7 +1334,7 @@ namespace Actions
         return 1;
     }
 
-    void CopyRemoteFilesThread(SceSize args, void *argp)
+    int CopyRemoteFilesThread(SceSize args, void *argp)
     {
         file_transfering = false;
         for (std::vector<DirEntry>::iterator it = remote_paste_files.begin(); it != remote_paste_files.end(); ++it)
@@ -1400,7 +1400,7 @@ namespace Actions
             temp_file = new_file + "." + std::to_string(i);
             i++;
         }
-        FILE *f = FS::Create(temp_file);
+        void *f = FS::Create(temp_file);
         FS::Close(f);
         RefreshLocalFiles(false);
         sprintf(local_file_to_select, "%s", temp_file.c_str());
@@ -1422,7 +1422,7 @@ namespace Actions
         SceRtcTick tick;
         sceRtcGetCurrentTick(&tick);
         std::string local_tmp = std::string(DATA_PATH) + "/" + std::to_string(tick.tick);
-        FILE *f = FS::Create(local_tmp);
+        void *f = FS::Create(local_tmp);
         FS::Close(f);
         remoteclient->Put(local_tmp, temp_file);
         FS::Rm(local_tmp);

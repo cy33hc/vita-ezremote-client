@@ -94,7 +94,7 @@ int FtpClient::Connect(const std::string &url, const std::string &user, const st
 	memset(&mp_ftphandle->response, 0, sizeof(mp_ftphandle->response));
 
 	memset(&server_addr, 0, sizeof(server_addr));
-	sceNetInetPton(SCE_NET_AF_INET, host.c_str(), (void *)&dst_addr);
+	sceNetInetPton(SCE_NET_AF_INET, ip, (void *)&dst_addr);
 	server_addr.sin_addr = dst_addr;
 	server_addr.sin_port = sceNetHtons(port);
 	server_addr.sin_family = SCE_NET_AF_INET;
@@ -127,14 +127,32 @@ int FtpClient::Connect(const std::string &url, const std::string &user, const st
 		return 0;
 	}
 
-	std::string cmd = "USER " + user;
+	std::string cmd;
+	if (user.length() > 0)
+	{
+		cmd = "USER " + user;
+	}
+	else
+	{
+		cmd = "USER anonymous";
+	}
+
 	if (!FtpSendCmd(cmd, '3', mp_ftphandle))
 	{
 		if (mp_ftphandle->ctrl != NULL)
 			return 1;
 		if (*LastResponse() == '2')
+		{
+			mp_ftphandle->is_connected = true;
 			return 1;
-		return 0;
+		}
+		else
+		{
+			Quit();
+			sprintf(mp_ftphandle->response, "%s", lang_strings[STR_FAIL_LOGIN_MSG]);
+			return 0;
+		}
+
 	}
 
 	cmd = "PASS " + pass;
@@ -143,6 +161,12 @@ int FtpClient::Connect(const std::string &url, const std::string &user, const st
 	{
 		mp_ftphandle->is_connected = true;
 	}
+	else
+	{
+		Quit();
+		sprintf(mp_ftphandle->response, "%s", lang_strings[STR_FAIL_LOGIN_MSG]);
+	}
+
 	return ret;
 }
 
@@ -1192,7 +1216,7 @@ int FtpClient::Rmdir(const std::string &path, bool recursive)
 			ret = Rmdir(list[i].path, recursive);
 			if (ret == 0)
 			{
-				snprintf(status_message, 1023,"%s %s", lang_strings[STR_FAIL_DEL_DIR_MSG], list[i].path);
+				snprintf(status_message, 1023, "%s %s", lang_strings[STR_FAIL_DEL_DIR_MSG], list[i].path);
 				return 0;
 			}
 		}
@@ -1202,7 +1226,7 @@ int FtpClient::Rmdir(const std::string &path, bool recursive)
 			ret = Delete(list[i].path);
 			if (ret == 0)
 			{
-				snprintf(status_message, 1023,"%s %s", lang_strings[STR_FAIL_DEL_FILE_MSG], list[i].path);
+				snprintf(status_message, 1023, "%s %s", lang_strings[STR_FAIL_DEL_FILE_MSG], list[i].path);
 				return 0;
 			}
 		}
@@ -1249,7 +1273,7 @@ int FtpClient::GetRange(const std::string &path, void *buffer, uint64_t size, ui
  *
  * return 1 if successful, 0 otherwise
  */
-int FtpClient::Size(const std::string &path, int64_t *size)
+int FtpClient::Size(const std::string &path, uint64_t *size)
 {
 	char cmd[512];
 	int resp, rv = 1;
@@ -1713,7 +1737,7 @@ std::string FtpClient::GetPath(std::string ppath1, std::string ppath2)
 
 uint32_t FtpClient::SupportedActions()
 {
-	return REMOTE_ACTION_ALL ^ REMOTE_ACTION_CUT ^ REMOTE_ACTION_COPY ^ REMOTE_ACTION_PASTE;
+	return REMOTE_ACTION_ALL ^ REMOTE_ACTION_CUT ^ REMOTE_ACTION_COPY ^ REMOTE_ACTION_PASTE ^ REMOTE_ACTION_RAW_READ;
 }
 
 int FtpClient::Copy(const std::string &from, const std::string &to)
@@ -1726,4 +1750,21 @@ int FtpClient::Move(const std::string &from, const std::string &to)
 {
 	sprintf(mp_ftphandle->response, "%s", lang_strings[STR_UNSUPPORTED_OPERATION_MSG]);
 	return 0;
+}
+
+void *FtpClient::Open(const std::string &path, int flags)
+{
+	sprintf(mp_ftphandle->response, "%s", lang_strings[STR_UNSUPPORTED_OPERATION_MSG]);
+	return nullptr;
+}
+
+void FtpClient::Close(void *fp)
+{
+	sprintf(mp_ftphandle->response, "%s", lang_strings[STR_UNSUPPORTED_OPERATION_MSG]);
+}
+
+int FtpClient::GetRange(void *fp, void *buffer, uint64_t size, uint64_t offset)
+{
+	sprintf(mp_ftphandle->response, "%s", lang_strings[STR_UNSUPPORTED_OPERATION_MSG]);
+	return -1;
 }

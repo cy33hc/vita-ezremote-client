@@ -21,7 +21,7 @@ namespace FS
         return path[strlen(path) - 1] == '/';
     }
 
-    void MkDirs(const std::string &ppath, bool prev = false)
+    void MkDirs(const std::string &ppath, bool prev)
     {
         std::string path = ppath;
         if (!prev)
@@ -201,7 +201,7 @@ namespace FS
 
     bool SaveText(std::vector<std::string> *lines, const std::string &path)
     {
-        FILE *fd = OpenRW(path);
+        void *fd = OpenRW(path);
         if (fd == nullptr)
             return false;
 
@@ -212,7 +212,7 @@ namespace FS
             Write(fd, nl, 1);
         }
 
-        fclose(fd);
+        Close(fd);
 
         return true;
     }
@@ -388,7 +388,7 @@ namespace FS
                 if (res > 0)
                 {
                     int path_length = strlen(path.c_str()) + strlen(dir.d_name) + 2;
-                    char *new_path = malloc(path_length);
+                    char *new_path = (char*) malloc(path_length);
                     snprintf(new_path, path_length, "%s%s%s", path.c_str(), hasEndSlash(path.c_str()) ? "" : "/", dir.d_name);
 
                     if (SCE_S_ISDIR(dir.d_stat.st_mode))
@@ -456,7 +456,7 @@ namespace FS
 
     int Head(const std::string &path, void *buffer, uint16_t len)
     {
-        FILE *file = OpenRead(path);
+        void *file = OpenRead(path);
         if (file == nullptr)
             return 0;
         int ret = Read(file, buffer, len);
@@ -472,7 +472,7 @@ namespace FS
     bool Copy(const std::string &from, const std::string &to)
     {
         MkDirs(to, true);
-        FILE *src = OpenRead(from);
+        void *src = OpenRead(from);
         if (!src)
         {
             return false;
@@ -480,7 +480,7 @@ namespace FS
 
         bytes_to_download = GetSize(from);
 
-        FILE *dest = Create(to);
+        void *dest = Create(to);
         if (!dest)
         {
             Close(src);

@@ -17,7 +17,7 @@
 #include "util.h"
 #include "config.h"
 
-#define BUF_SIZE 64*1024
+#define BUF_SIZE 64 * 1024
 
 NfsClient::NfsClient()
 {
@@ -38,7 +38,8 @@ int NfsClient::Connect(const std::string &url, const std::string &user, const st
 	}
 
 	struct nfs_url *nfsurl = nfs_parse_url_full(nfs, url.c_str());
-	if (nfsurl == nullptr) {
+	if (nfsurl == nullptr)
+	{
 		snprintf(response, 1023, "%s", nfs_get_error(nfs));
 		nfs_destroy_context(nfs);
 		return 0;
@@ -157,7 +158,7 @@ int NfsClient::Rmdir(const std::string &path, bool recursive)
 			ret = Rmdir(list[i].path, recursive);
 			if (ret == 0)
 			{
-				snprintf(status_message, 1023,"%s %s", lang_strings[STR_FAIL_DEL_DIR_MSG], list[i].path);
+				snprintf(status_message, 1023, "%s %s", lang_strings[STR_FAIL_DEL_DIR_MSG], list[i].path);
 				return 0;
 			}
 		}
@@ -175,7 +176,7 @@ int NfsClient::Rmdir(const std::string &path, bool recursive)
 	ret = _Rmdir(path);
 	if (ret == 0)
 	{
-		snprintf(status_message, 1023,"%s %s", lang_strings[STR_FAIL_DEL_DIR_MSG], path.c_str());
+		snprintf(status_message, 1023, "%s %s", lang_strings[STR_FAIL_DEL_DIR_MSG], path.c_str());
 		return 0;
 	}
 
@@ -204,7 +205,7 @@ int NfsClient::Get(const std::string &outputfile, const std::string &ppath, uint
 		return 0;
 	}
 
-	FILE* out = FS::Create(outputfile);
+	void *out = FS::Create(outputfile);
 	if (out == NULL)
 	{
 		snprintf(response, 1023, "%s", lang_strings[STR_FAILED]);
@@ -221,7 +222,7 @@ int NfsClient::Get(const std::string &outputfile, const std::string &ppath, uint
 			snprintf(response, 1023, "%s", nfs_get_error(nfs));
 			FS::Close(out);
 			nfs_close(nfs, nfsfh);
-			free((void*)buff);
+			free((void *)buff);
 			return 0;
 		}
 		FS::Write(out, buff, count);
@@ -229,35 +230,39 @@ int NfsClient::Get(const std::string &outputfile, const std::string &ppath, uint
 	}
 	FS::Close(out);
 	nfs_close(nfs, nfsfh);
-	free((void*)buff);
+	free((void *)buff);
 
 	return 1;
 }
 
 int NfsClient::GetRange(const std::string &ppath, void *buffer, uint64_t size, uint64_t offset)
 {
-	if (!FileExists(ppath))
-	{
-		return 0;
-	}
-
 	struct nfsfh *nfsfh = nullptr;
 	int ret = nfs_open(nfs, ppath.c_str(), 0400, &nfsfh);
 	if (ret != 0)
 	{
-		snprintf(response, 1023, "%s", nfs_get_error(nfs));
+		sprintf(response, "%s", nfs_get_error(nfs));
 		return 0;
 	}
 
-	ret = nfs_lseek(nfs, nfsfh, offset, SEEK_SET, NULL);
+	ret = this->GetRange(nfsfh, buffer, size, offset);
+	nfs_close(nfs, nfsfh);
+
+	return ret;
+}
+
+int NfsClient::GetRange(void *fp, void *buffer, uint64_t size, uint64_t offset)
+{
+	struct nfsfh *nfsfh = (struct nfsfh *)fp;
+
+	int ret = nfs_lseek(nfs, nfsfh, offset, SEEK_SET, NULL);
 	if (ret != 0)
 	{
-		snprintf(response, 1023, "%s", nfs_get_error(nfs));
+		sprintf(response, "%s", nfs_get_error(nfs));
 		return 0;
 	}
 
 	int count = nfs_read(nfs, nfsfh, size, buffer);
-	nfs_close(nfs, nfsfh);
 	if (count != size)
 		return 0;
 
@@ -301,13 +306,13 @@ int NfsClient::Put(const std::string &inputfile, const std::string &ppath, uint6
 		return 0;
 	}
 
-	FILE* in = FS::OpenRead(inputfile);
+	void *in = FS::OpenRead(inputfile);
 	if (in == NULL)
 	{
 		snprintf(response, 1023, "%s", lang_strings[STR_FAILED]);
 		return 0;
 	}
-	
+
 	struct nfsfh *nfsfh = nullptr;
 	int ret;
 	if (!FileExists(ppath))
@@ -323,7 +328,7 @@ int NfsClient::Put(const std::string &inputfile, const std::string &ppath, uint6
 		return 0;
 	}
 
-	void* buff = malloc(BUF_SIZE);
+	void *buff = malloc(BUF_SIZE);
 	uint64_t count = 0;
 	bytes_transfered = 0;
 	while ((count = FS::Read(in, buff, BUF_SIZE)) > 0)
@@ -377,7 +382,7 @@ int NfsClient::Delete(const std::string &ppath)
 	return 1;
 }
 
-int NfsClient::Size(const std::string &ppath, int64_t *size)
+int NfsClient::Size(const std::string &ppath, uint64_t *size)
 {
 	nfs_stat_64 st;
 	int ret = nfs_stat64(nfs, ppath.c_str(), &st);
@@ -401,7 +406,8 @@ std::vector<DirEntry> NfsClient::ListDir(const std::string &path)
 	struct nfsdirent *nfsdirent;
 
 	int ret = nfs_opendir(nfs, path.c_str(), &nfsdir);
-	if (ret != 0) {
+	if (ret != 0)
+	{
 		snprintf(response, 1023, "%s", nfs_get_error(nfs));
 		return out;
 	}
@@ -468,7 +474,6 @@ std::vector<DirEntry> NfsClient::ListDir(const std::string &path)
 		}
 		if (strcmp(entry.name, "..") != 0 && strcmp(entry.name, ".") != 0)
 			out.push_back(entry);
-
 	}
 	nfs_closedir(nfs, nfsdir);
 
@@ -516,4 +521,15 @@ ClientType NfsClient::clientType()
 uint32_t NfsClient::SupportedActions()
 {
 	return REMOTE_ACTION_ALL ^ REMOTE_ACTION_CUT ^ REMOTE_ACTION_COPY ^ REMOTE_ACTION_PASTE;
+}
+
+void *NfsClient::Open(const std::string &path, int flags)
+{
+	sprintf(this->response, "%s", lang_strings[STR_UNSUPPORTED_OPERATION_MSG]);
+	return nullptr;
+}
+
+void NfsClient::Close(void *fp)
+{
+	sprintf(this->response, "%s", lang_strings[STR_UNSUPPORTED_OPERATION_MSG]);
 }

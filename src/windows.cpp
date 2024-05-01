@@ -268,7 +268,7 @@ namespace Windows
         void *icon = is_connected ? (void *)disconnect_icon : (void *)connect_icon;
         sprintf(id, "###connectbutton");
         ImGui::SetCursorPosX(ImGui::GetCursorPosX() - 2);
-        if (ImGui::ImageButtonEx(id, (void *)icon, ImVec2(25, 25), ImVec2(0, 0), ImVec2(1, 1), style->FramePadding, ImVec4(0, 0, 0, 0), ImVec4(1, 1, 1, 1)))
+        if (ImGui::ImageButtonEx(ImGui::GetID(id), (void *)icon, ImVec2(25, 25), ImVec2(0, 0), ImVec2(1, 1), style->FramePadding, ImVec4(0, 0, 0, 0), ImVec4(1, 1, 1, 1)))
         {
             selected_action = is_connected ? ACTION_DISCONNECT : ACTION_CONNECT;
         }
