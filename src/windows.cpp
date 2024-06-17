@@ -25,6 +25,9 @@ static SceCtrlData pad_prev;
 bool paused = false;
 int view_mode;
 static float scroll_direction = 0.0f;
+static int selected_local_position = -1;
+static int selected_remote_position = -1;
+
 static ime_callback_t ime_callback = nullptr;
 static ime_callback_t ime_after_update = nullptr;
 static ime_callback_t ime_before_update = nullptr;
@@ -33,8 +36,8 @@ static std::vector<std::string> *ime_multi_field;
 static char *ime_single_field;
 static int ime_field_size;
 
-float previous_right = 0.0f;
-float previous_left = 0.0f;
+float previous_up = 0.0f;
+float previous_down = 0.0f;
 uint64_t bytes_transfered = 0;
 uint64_t bytes_to_download;
 SceUInt64 prev_tick;
@@ -153,8 +156,6 @@ namespace Windows
         }
 
         pad_prev = pad;
-        previous_right = io.NavInputs[ImGuiNavInput_DpadRight];
-        previous_left = io.NavInputs[ImGuiNavInput_DpadLeft];
     }
 
     void SetModalMode(bool modal)
@@ -521,6 +522,25 @@ namespace Windows
                     ImGui::Text(item.name);
                     ImGui::EndTooltip();
                 }
+                ImGuiIO &io = ImGui::GetIO();
+                if (io.NavInputs[ImGuiNavInput_DpadUp] == 1.0f && previous_up != 1.0f && !paused)
+                {
+                    if (j == 0)
+                    {
+                        selected_local_position = local_files.size()-1;
+                        scroll_direction = 0.0f;
+                    }
+                }
+                else if (io.NavInputs[ImGuiNavInput_DpadDown] == 1.0f && previous_down != 1.0f && !paused)
+                {
+                    if (j == local_files.size()-1)
+                    {
+                        selected_local_position = 0;
+                        scroll_direction = 1.0f;
+                    }
+                }
+                previous_up = io.NavInputs[ImGuiNavInput_DpadUp];
+                previous_down = io.NavInputs[ImGuiNavInput_DpadDown];
             }
             if (ImGui::IsWindowFocused(ImGuiFocusedFlags_ChildWindows))
             {
@@ -529,6 +549,12 @@ namespace Windows
                     SetNavFocusHere();
                     ImGui::SetScrollHereY(0.5f);
                     sprintf(local_file_to_select, "");
+                }
+                if (selected_local_position == j && !paused)
+                {
+                    SetNavFocusHere();
+                    ImGui::SetScrollHereY(scroll_direction);
+                    selected_local_position = -1;
                 }
                 selected_browser |= LOCAL_BROWSER;
             }
@@ -683,6 +709,25 @@ namespace Windows
                     ImGui::Text(item.name);
                     ImGui::EndTooltip();
                 }
+                ImGuiIO &io = ImGui::GetIO();
+                if (io.NavInputs[ImGuiNavInput_DpadUp] == 1.0f && previous_up != 1.0f && !paused)
+                {
+                    if (j == 0)
+                    {
+                        selected_remote_position = remote_files.size()-1;
+                        scroll_direction = 0.0f;
+                    }
+                }
+                else if (io.NavInputs[ImGuiNavInput_DpadDown] == 1.0f && previous_down != 1.0f && !paused)
+                {
+                    if (j == remote_files.size()-1)
+                    {
+                        selected_remote_position = 0;
+                        scroll_direction = 1.0f;
+                    }
+                }
+                previous_up = io.NavInputs[ImGuiNavInput_DpadUp];
+                previous_down = io.NavInputs[ImGuiNavInput_DpadDown];
             }
             ImGui::PopID();
             if (ImGui::IsItemFocused())
@@ -696,6 +741,12 @@ namespace Windows
                     SetNavFocusHere();
                     ImGui::SetScrollHereY(0.5f);
                     sprintf(remote_file_to_select, "");
+                }
+                if (selected_remote_position == j && !paused)
+                {
+                    SetNavFocusHere();
+                    ImGui::SetScrollHereY(scroll_direction);
+                    selected_remote_position = -1;
                 }
                 selected_browser |= REMOTE_BROWSER;
             }
