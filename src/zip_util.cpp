@@ -66,6 +66,7 @@ namespace ZipUtil
         convertToZipTime(file_stat.st_mtime, &zi.tmz_date);
 
         bytes_transfered = 0;
+        prev_tick = sceKernelGetProcessTimeWide();
         bytes_to_download = file_stat.st_size;
 
         // Large file?
@@ -398,6 +399,7 @@ namespace ZipUtil
         {
             snprintf(activity_message, 255, "%s: %s", lang_strings[STR_EXTRACTING], pathname);
             bytes_transfered = 0;
+            prev_tick = sceKernelGetProcessTimeWide();
 
             extract_file(a, e, realpathname);
         }

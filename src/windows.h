@@ -14,6 +14,7 @@
 extern int view_mode;
 extern uint64_t bytes_transfered;
 extern uint64_t bytes_to_download;
+extern SceUInt64 prev_tick;
 extern std::vector<DirEntry> local_files;
 extern std::vector<DirEntry> remote_files;
 extern std::set<DirEntry> multi_selected_local_files;

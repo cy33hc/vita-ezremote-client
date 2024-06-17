@@ -37,6 +37,7 @@ float previous_right = 0.0f;
 float previous_left = 0.0f;
 uint64_t bytes_transfered = 0;
 uint64_t bytes_to_download;
+SceUInt64 prev_tick;
 std::vector<DirEntry> local_files;
 std::vector<DirEntry> remote_files;
 std::set<DirEntry> multi_selected_local_files;
@@ -1237,9 +1238,18 @@ namespace Windows
                 if (file_transfering)
                 {
                     static float progress = 0.0f;
+                    static double transfer_speed = 0.0f;
                     static char progress_text[32];
+                    static SceUInt64 cur_tick;
+                    static double tick_delta;
+
+                    cur_tick = sceKernelGetProcessTimeWide();
+                    tick_delta = (cur_tick - prev_tick) * 1.0f / 1000000.0f;
+
                     progress = (float)bytes_transfered / (float)bytes_to_download;
-                    sprintf(progress_text, "%.3f%%", progress * 100.0f);
+                    transfer_speed = (bytes_transfered * 1.0f / tick_delta) / 1048576.0f;
+
+                    sprintf(progress_text, "%.3f MB/s", transfer_speed);
                     ImGui::ProgressBar(progress, ImVec2(465, 0), progress_text);
                 }
 
