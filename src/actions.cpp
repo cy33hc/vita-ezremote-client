@@ -342,6 +342,7 @@ namespace Actions
 
         if (confirm_state == CONFIRM_YES)
         {
+            prev_tick = sceKernelGetProcessTimeWide();
             sprintf(activity_message, "%s %s\n", lang_strings[STR_UPLOADING], src);
             return remoteclient->Put(src, dest);
         }
@@ -495,6 +496,7 @@ namespace Actions
 
         if (confirm_state == CONFIRM_YES)
         {
+            prev_tick = sceKernelGetProcessTimeWide();
             sprintf(activity_message, "%s %s\n", lang_strings[STR_DOWNLOADING], src);
             return remoteclient->Get(dest, src);
         }
@@ -1005,6 +1007,7 @@ namespace Actions
 
         if (confirm_state == CONFIRM_YES)
         {
+            prev_tick = sceKernelGetProcessTimeWide();
             if (isCopy)
                 return FS::Copy(src, dest);
             else
@@ -1212,6 +1215,7 @@ namespace Actions
 
         if (confirm_state == CONFIRM_YES)
         {
+            prev_tick = sceKernelGetProcessTimeWide();
             if (isCopy)
                 return remoteclient->Copy(src, dest);
             else
