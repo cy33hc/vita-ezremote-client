@@ -13,7 +13,7 @@ include("${VITASDK}/share/vita.cmake" REQUIRED)
 
 set(VITA_APP_NAME "ezRemote Client")
 set(VITA_TITLEID  "RMTCLI001")
-set(VITA_VERSION  "01.04")
+set(VITA_VERSION  "01.05")
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fpermissive -Wno-psabi")
 set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS}")
@@ -26,6 +26,7 @@ include_directories(
 
 add_executable(${PROJECT_NAME}
   src/clients/apache.cpp
+  src/clients/archiveorg.cpp
   src/clients/baseclient.cpp
   src/clients/ftpclient.cpp
   src/clients/iis.cpp
