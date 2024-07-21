@@ -30,6 +30,7 @@ add_executable(${PROJECT_NAME}
   src/clients/baseclient.cpp
   src/clients/ftpclient.cpp
   src/clients/iis.cpp
+  src/clients/myrient.cpp
   src/clients/nfsclient.cpp
   src/clients/nginx.cpp
   src/clients/npxserve.cpp
