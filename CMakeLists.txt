@@ -153,6 +153,7 @@ vita_create_vpk(${PROJECT_NAME}.vpk ${VITA_TITLEID} eboot.bin
   FILE lang/Hungarian.ini lang/Hungarian.ini
   FILE lang/Thai.ini lang/Thai.ini
   FILE lang/Turkish.ini lang/Turkish.ini
+  FILE lang/Vietnamese.ini lang/Vietnamese.ini
   FILE lang/Roboto_ext.ttf lang/Roboto_ext.ttf
   FILE certs/cacert.pem certs/cacert.pem
   FILE version.txt version.txt

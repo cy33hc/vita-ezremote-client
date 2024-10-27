@@ -85,9 +85,9 @@ namespace Services
 		config.OversampleH = 1;
 		config.OversampleV = 1;
 
-		if (lang.size() > 0)
+		if (lang.size() > 0 && lang.compare("Default") != 0)
 		{
-			if (strcmp(lang.c_str(), "Ryukyuan") == 0)
+			if (lang.compare("Ryukyuan") == 0 || lang.compare("Japanese") == 0)
 			{
 				io.Fonts->AddFontFromFileTTF(
 					"sa0:/data/font/pvf/jpn0.pvf",
@@ -95,26 +95,42 @@ namespace Services
 					&config,
 					io.Fonts->GetGlyphRangesJapanese());
 			}
-			else if (strcmp(lang.c_str(), "Thai") == 0)
+			else if (lang.compare("Chinese_Simplified") == 0 || lang.compare("Chinese_Traditional") == 0)
 			{
 				io.Fonts->AddFontFromFileTTF(
-					"ux0:app/SMBCLI001/lang/Roboto_ext.ttf",
+					"sa0:/data/font/pvf/cn0.pvf",
+					16.0f,
+					&config,
+					io.Fonts->GetGlyphRangesChineseFull());
+			}
+			else if (lang.compare("Korean") == 0)
+			{
+				io.Fonts->AddFontFromFileTTF(
+					"ux0:app/RMTCLI001/lang/Roboto_ext.ttf",
+					16.0f,
+					&config,
+					io.Fonts->GetGlyphRangesKorean());
+			}
+			else if (lang.compare("Thai") == 0)
+			{
+				io.Fonts->AddFontFromFileTTF(
+					"ux0:app/RMTCLI001/lang/Roboto_ext.ttf",
 					16.0f,
 					&config,
 					io.Fonts->GetGlyphRangesThai());
 			}
-			else if (strcmp(lang.c_str(), "Vietnamese") == 0)
+			else if (lang.compare("Vietnamese") == 0)
 			{
 				io.Fonts->AddFontFromFileTTF(
-					"ux0:app/SMBCLI001/lang/Roboto_ext.ttf",
+					"ux0:app/RMTCLI001/lang/Roboto_ext.ttf",
 					16.0f,
 					&config,
 					io.Fonts->GetGlyphRangesVietnamese());
 			}
-			else if (strcmp(lang.c_str(), "Arabic") == 0)
+			else if (lang.compare("Arabic") == 0)
 			{
 				io.Fonts->AddFontFromFileTTF(
-					"ux0:app/SMBCLI001/lang/Roboto_ext.ttf",
+					"ux0:app/RMTCLI001/lang/Roboto_ext.ttf",
 					16.0f,
 					&config,
 					arabic);
@@ -148,18 +164,11 @@ namespace Services
 				break;
 			case SCE_SYSTEM_PARAM_LANG_KOREAN:
 			{
-				config.MergeMode = true;
 				io.Fonts->AddFontFromFileTTF(
-					"sa0:/data/font/pvf/ltn0.pvf",
-					16.0f,
-					&config,
-					io.Fonts->GetGlyphRangesDefault());
-				io.Fonts->AddFontFromFileTTF(
-					"sa0:/data/font/pvf/kr0.pvf",
+					"ux0:app/RMTCLI001/lang/Roboto_ext.ttf",
 					16.0f,
 					&config,
 					io.Fonts->GetGlyphRangesKorean());
-				io.Fonts->Build();
 			}
 			break;
 			case SCE_SYSTEM_PARAM_LANG_JAPANESE:
