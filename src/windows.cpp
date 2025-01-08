@@ -373,9 +373,9 @@ namespace Windows
             {
                 ime_single_field = remote_settings->password;
                 ResetImeCallbacks();
-                ime_field_size = 31;
+                ime_field_size = 127;
                 ime_callback = SingleValueImeCallback;
-                Dialog::initImeDialog(lang_strings[STR_PASSWORD], remote_settings->password, 31, SCE_IME_TYPE_DEFAULT, 0, 0);
+                Dialog::initImeDialog(lang_strings[STR_PASSWORD], remote_settings->password, 127, SCE_IME_TYPE_DEFAULT, 0, 0);
                 gui_mode = GUI_MODE_IME;
             }
         }
