@@ -345,7 +345,9 @@ namespace Services
 	}
 } // namespace Services
 
-unsigned int _newlib_heap_size_user = 190 * 1024 * 1024;
+extern "C" {
+	int _newlib_heap_size_user = 300 * 1024 * 1024;
+}
 
 int main(int, char **)
 {
