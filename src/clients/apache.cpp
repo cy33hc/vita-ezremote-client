@@ -231,5 +231,6 @@ std::vector<DirEntry> ApacheClient::ListDir(const std::string &path)
     }
 
 finish:
+    apply_native_filter_state = 2;
     return out;
 }
