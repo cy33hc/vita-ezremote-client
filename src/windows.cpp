@@ -69,6 +69,7 @@ bool set_focus_to_remote = false;
 char extract_zip_folder[256];
 char zip_file_path[384];
 char zip_password[128];
+int apply_native_filter_state;
 
 // Editor variables
 std::vector<std::string> edit_buffer;
@@ -105,6 +106,7 @@ namespace Windows
         confirm_transfer_state = -1;
         dont_prompt_overwrite_cb = false;
         overwrite_type = OVERWRITE_PROMPT;
+        apply_native_filter_state = 2;
 
         Actions::RefreshLocalFiles(false);
     }
@@ -1623,6 +1625,17 @@ namespace Windows
             editor_modified = false;
             selected_action = ACTION_NONE;
             break;
+        case ACTION_APPLY_REMOTE_NATIVE_FILTER:
+            ime_single_field = remote_filter;
+            ResetImeCallbacks();
+            ime_field_size = 31;
+            ime_callback = SingleValueImeCallback;
+            ime_after_update = AfterRemoteNativeFilterCallback;
+            ime_cancelled = AfterRemoteNativeFilterCancelCallback;
+            Dialog::initImeDialog(lang_strings[STR_FILTER], remote_filter, 31, SCE_IME_TYPE_DEFAULT, 0, 0);
+            gui_mode = GUI_MODE_IME;
+            selected_action = ACTION_NONE;
+            break;
         default:
             break;
         }
@@ -1768,6 +1781,21 @@ namespace Windows
     void AfterZipFileCallback(int ime_result)
     {
         selected_action = ACTION_CREATE_LOCAL_ZIP;
+    }
+
+    void AfterRemoteNativeFilterCallback(int ime_result)
+    {
+        if (ime_result == IME_DIALOG_RESULT_FINISHED)
+        {
+            apply_native_filter_state = 1;
+            selected_action = ACTION_REFRESH_REMOTE_FILES;
+        }
+    }
+
+    void AfterRemoteNativeFilterCancelCallback(int ime_result)
+    {
+        apply_native_filter_state = 0;
+        selected_action = ACTION_REFRESH_REMOTE_FILES;
     }
 
     void AferServerChangeCallback(int ime_result)

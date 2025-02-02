@@ -42,6 +42,7 @@ extern char extract_zip_folder[];
 extern char zip_file_path[];
 extern std::vector<std::string> edit_buffer;
 extern char zip_password[128];
+extern int apply_native_filter_state;
 
 static ImVector<ImRect> s_GroupPanelLabelStack;
 
@@ -198,6 +199,8 @@ namespace Windows {
     void AfterExtractFolderCallback(int ime_result);
     void AfterExtractRemoteFolderCallback(int ime_result);
     void AfterZipFileCallback(int ime_result);
+    void AfterRemoteNativeFilterCallback(int ime_result);
+    void AfterRemoteNativeFilterCancelCallback(int ime_result);
 
 }
 

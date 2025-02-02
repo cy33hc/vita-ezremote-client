@@ -152,7 +152,9 @@ namespace Actions
         {
             sprintf(remote_file_to_select, "%s", remote_files[0].name);
         }
-        selected_action = ACTION_NONE;
+
+        if (selected_action != ACTION_APPLY_REMOTE_NATIVE_FILTER)
+            selected_action = ACTION_NONE;
     }
 
     void HandleRefreshLocalFiles()
@@ -179,7 +181,8 @@ namespace Actions
                 sprintf(remote_file_to_select, "%s", remote_files[0].name);
             }
         }
-        selected_action = ACTION_NONE;
+        if (selected_action != ACTION_APPLY_REMOTE_NATIVE_FILTER)
+            selected_action = ACTION_NONE;
     }
 
     void CreateNewLocalFolder(char *new_folder)
@@ -952,7 +955,8 @@ namespace Actions
                 remoteclient = nullptr;
             }
         }
-        selected_action = ACTION_NONE;
+        if (selected_action != ACTION_APPLY_REMOTE_NATIVE_FILTER)
+            selected_action = ACTION_NONE;
     }
 
     void Disconnect()
