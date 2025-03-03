@@ -82,7 +82,7 @@ To distinguish between FTP, SMB, NFS, WebDAV or HTTP, the URL must be prefix wit
 - For Myrient repos, entry **https://myrient.erista.me/files** in the server field.
   ![image](https://github.com/user-attachments/assets/b80e2bec-b8cc-4acc-9ab6-7b0dc4ef20e6)
 
-- Support for browse and download  release artifacts from github repos. Under the server just enter the git repo of the homebrew eg https://github.com/cy33hc/ps4-ezremote-client
+- Support for browse and download  release artifacts from github repos. Under the server just enter the git repo of the homebrew
   ![image](https://github.com/user-attachments/assets/f8e931ea-f1d1-4af8-aed5-b0dfe661a230)
 
 Tested with following WebDAV server:
